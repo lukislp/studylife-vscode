@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/lukislp/studylife-vscode/compare/v1.0.0...v1.1.0) (2026-09-16)
+
+
+### Features
+
+* add an activity bar view with timer controls ([#8](https://github.com/lukislp/studylife-vscode/issues/8)) ([bbef575](https://github.com/lukislp/studylife-vscode/commit/bbef57507d48403c13aabcd54f54e3206a4d9539))
+
 # 1.0.0 (2026-09-16)
 
 
