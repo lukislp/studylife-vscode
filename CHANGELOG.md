@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/lukislp/studylife-vscode/compare/v1.2.0...v1.3.0) (2026-09-16)
+
+
+### Features
+
+* record a study session when a timer run had none planned ([#10](https://github.com/lukislp/studylife-vscode/issues/10)) ([4e53cb7](https://github.com/lukislp/studylife-vscode/commit/4e53cb7acc5c6817366239b9ea67c9d8c61123d9))
+
 # [1.2.0](https://github.com/lukislp/studylife-vscode/compare/v1.1.0...v1.2.0) (2026-09-16)
 
 
