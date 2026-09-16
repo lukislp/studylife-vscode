@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/lukislp/studylife-vscode/compare/v1.3.0...v1.3.1) (2026-09-16)
+
+
+### Bug Fixes
+
+* keep the remainder on pause, show real hours today, stop rows overflowing ([#11](https://github.com/lukislp/studylife-vscode/issues/11)) ([4887ed9](https://github.com/lukislp/studylife-vscode/commit/4887ed9918544c1fb543fc6efbb2e3822ea3f41e))
+
 # [1.3.0](https://github.com/lukislp/studylife-vscode/compare/v1.2.0...v1.3.0) (2026-09-16)
 
 
