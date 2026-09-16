@@ -2,11 +2,19 @@
 // suggestion together. Deliberately thin - the rules live in the modules it pulls in, which are
 // the ones under test.
 import * as vscode from "vscode";
-import { ApiError, type Course, StudyLifeApi, type TimerState } from "./api.js";
+import {
+  ApiError,
+  type Course,
+  type MetricsSummary,
+  StudyLifeApi,
+  type TimerState,
+} from "./api.js";
 import { ActivityTracker, type Stretch, durationMs, formatDuration } from "./activity.js";
 import { LoginError, clearApiKey, readApiKey, runLogin, storeApiKey } from "./auth.js";
 import { StatusBar } from "./statusBar.js";
-import { StudyLifeTreeProvider } from "./sidebar.js";
+import { StudyLifePanel } from "./panel.js";
+import { activeGoals } from "./panelModel.js";
+import { transition } from "./timer.js";
 
 const COURSE_KEY_PREFIX = "studylife.course.";
 /** Flow State (52/17) - the closest built-in preset to an uninterrupted coding block. Only used
@@ -16,23 +24,23 @@ const DEFAULT_TIMER_MODE_ID = 2;
 
 let api: StudyLifeApi | undefined;
 let statusBar: StatusBar;
-let tree: StudyLifeTreeProvider;
+let panel: StudyLifePanel;
 /** Course name for the current workspace, resolved lazily so the sidebar can show it without
  *  an extra request on every poll. */
 let workspaceCourseName: string | undefined;
 let tracker: ActivityTracker;
 let pollTimer: NodeJS.Timeout | undefined;
 let lastTimerState: TimerState | undefined;
-/** Monotonic per-window counter. The server drops a PUT whose ClientSequence is older than the
- *  one it already stored, which is what keeps two rapid transitions from landing reversed. */
-let clientSequence = 0;
+/** Kept from the last poll so the course picker can offer the active courses without
+ *  a second request while the user is waiting on the quick pick. */
+let lastMetrics: MetricsSummary | undefined;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   statusBar = new StatusBar();
   context.subscriptions.push(statusBar);
-  tree = new StudyLifeTreeProvider();
+  panel = new StudyLifePanel(context.extensionUri);
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider("studylife.overview", tree),
+    vscode.window.registerWebviewViewProvider(StudyLifePanel.viewType, panel),
   );
   tracker = buildTracker();
 
@@ -88,7 +96,7 @@ async function refresh(): Promise<void> {
   if (!api) {
     const now = Date.now();
     statusBar.render({ connected: false, now });
-    tree.update({ connected: false, now });
+    panel.update({ connected: false, now });
     return;
   }
   try {
@@ -97,6 +105,7 @@ async function refresh(): Promise<void> {
       api.getMetricsSummary(),
     ]);
     lastTimerState = timerState;
+    lastMetrics = metrics;
     const snapshot = {
       connected: true,
       timer: timerState,
@@ -105,7 +114,7 @@ async function refresh(): Promise<void> {
       now: Date.now(),
     };
     statusBar.render(snapshot);
-    tree.update({ ...snapshot, courseName: workspaceCourseName });
+    panel.update({ ...snapshot, courseName: workspaceCourseName });
   } catch (error) {
     // A failed poll is not worth a modal - the status bar going quiet is signal enough, and the
     // next tick may well succeed. A scope problem is the exception: it never fixes itself.
@@ -114,7 +123,7 @@ async function refresh(): Promise<void> {
     }
     const now = Date.now();
     statusBar.render({ connected: true, now });
-    tree.update({ connected: true, now, courseName: workspaceCourseName });
+    panel.update({ connected: true, now, courseName: workspaceCourseName });
   }
 }
 
@@ -165,15 +174,11 @@ async function controlTimer(
     void vscode.window.showWarningMessage("StudyLife: not connected yet.");
     return;
   }
-  clientSequence += 1;
   const base = lastTimerState ?? (await api.getTimerState());
-  const next: TimerState = {
-    ...base,
-    isRunning: action !== "stop",
-    isPaused: action === "pause",
-    clientSequence,
+  const next = transition(base, action, {
+    now: Date.now(),
     ...(courseId === undefined ? {} : { courseId }),
-  };
+  });
   try {
     // The server answers with the authoritative row, not an echo - render that, so a transition
     // it resolved differently is visible immediately instead of at the next poll.
@@ -188,7 +193,7 @@ async function controlTimer(
 /**
  * Starts the timer after asking which course it is for. Offered only while the timer is stopped -
  * changing the course of a session already under way would silently re-attribute time that has
- * already been spent, and that history feeds the grade correlations.
+ * already been spent, and that history feeds the grade and ECTS correlations.
  */
 async function startTimerWithCourse(context: vscode.ExtensionContext): Promise<void> {
   if (!api) {
@@ -253,22 +258,54 @@ async function resolveCourse(context: vscode.ExtensionContext): Promise<number |
   return pickWorkspaceCourse(context);
 }
 
-/** The course picker on its own, so both the workspace mapping and the timer start can use it. */
+/**
+ * The course picker. Offers the courses with an open goal first - StudyLife has no "active" flag,
+ * but an uncompleted course goal is exactly "a course I am working towards", and the built-in
+ * catalogue alone carries around sixty entries, which is an unusable list to start a session from.
+ * The full catalogue stays one click away rather than being hidden.
+ */
 async function pickCourse(title: string): Promise<number | undefined> {
   if (!api) {
     void vscode.window.showWarningMessage("StudyLife: not connected yet.");
     return undefined;
   }
+
+  const active = activeGoals(lastMetrics);
+  if (active.length > 0) {
+    const SHOW_ALL = -1;
+    const picked = await vscode.window.showQuickPick(
+      [
+        ...active.map((g) => ({
+          label: g.courseName,
+          description: g.daysLeft < 0 ? `${Math.abs(g.daysLeft)} days overdue` : `in ${g.daysLeft} days`,
+          id: g.courseId,
+        })),
+        { label: "$(list-unordered) All courses…", description: "", id: SHOW_ALL },
+      ],
+      { title, ignoreFocusOut: true, matchOnDescription: true },
+    );
+    if (!picked) return undefined;
+    if (picked.id !== SHOW_ALL) return picked.id;
+  }
+
+  return pickFromFullCatalogue(title);
+}
+
+async function pickFromFullCatalogue(title: string): Promise<number | undefined> {
   let courses: Course[];
   try {
-    courses = await api.getCourses();
+    courses = (await api?.getCourses()) ?? [];
   } catch (error) {
     void vscode.window.showErrorMessage(`StudyLife: ${String(error)}`);
     return undefined;
   }
   const picked = await vscode.window.showQuickPick(
-    courses.map((c) => ({ label: c.name, id: c.id })),
-    { title, ignoreFocusOut: true },
+    courses.map((c) => ({
+      label: c.name,
+      description: c.semester === undefined ? "" : `Semester ${c.semester}`,
+      id: c.id,
+    })),
+    { title, ignoreFocusOut: true, matchOnDescription: true },
   );
   return picked?.id;
 }

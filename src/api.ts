@@ -2,20 +2,17 @@
 // one entry the client requests at registration; adding a call here means adding the scope there
 // (and having it be publicly grantable server-side), never the other way round.
 import { trimBase } from "./oauth.js";
+// The timer shape lives with the transition rules it belongs to.
+export type { TimerState } from "./timer.js";
+import type { TimerState } from "./timer.js";
 
-export interface TimerState {
-  isRunning: boolean;
-  isPaused?: boolean;
-  courseId?: number;
-  timerModeId?: number;
-  clientSequence?: number;
-  [key: string]: unknown;
-}
 
 export interface Course {
   id: number;
   name: string;
   color?: string;
+  icon?: string;
+  semester?: number;
 }
 
 export interface UpcomingGoal {

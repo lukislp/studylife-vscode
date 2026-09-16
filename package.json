@@ -122,33 +122,18 @@
     "views": {
       "studylife": [
         {
-          "id": "studylife.overview",
-          "name": "Overview",
-          "icon": "media/studylife.svg"
+          "type": "webview",
+          "id": "studylife.panel",
+          "name": "StudyLife"
         }
       ]
     },
     "menus": {
       "view/title": [
         {
-          "command": "studylife.startTimerWithCourse",
-          "when": "view == studylife.overview",
-          "group": "navigation@1"
-        },
-        {
-          "command": "studylife.pauseTimer",
-          "when": "view == studylife.overview",
-          "group": "navigation@2"
-        },
-        {
-          "command": "studylife.stopTimer",
-          "when": "view == studylife.overview",
-          "group": "navigation@3"
-        },
-        {
           "command": "studylife.refresh",
-          "when": "view == studylife.overview",
-          "group": "navigation@4"
+          "when": "view == studylife.panel",
+          "group": "navigation@1"
         }
       ]
     }
