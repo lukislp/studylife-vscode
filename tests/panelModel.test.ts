@@ -51,7 +51,7 @@ describe("timer card", () => {
 describe("stats", () => {
   it("renders the three tiles from the metrics API", () => {
     const stats = buildPanel(
-      base({ metrics: { hours: { today: 2.25, week: 9.5 }, streak: { current: 5 } } }),
+      base({ metrics: { hours: { week: 9.5 }, streak: { current: 5 } }, todayHours: 2.25 }),
     ).stats;
     expect(stats.map((s) => s.value)).toEqual(["2 h 15 min", "9 h 30 min", "5 days"]);
   });

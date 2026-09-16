@@ -24,8 +24,17 @@ export interface UpcomingGoal {
 
 export interface MetricsSummary {
   streak?: { current?: number };
-  hours?: { today?: number; week?: number };
+  /** The API has no "today" figure - only week, month and total (MetricsHoursDto). Today is
+   *  summed from the session history instead, see StudyLifeApi.getTodayHours. */
+  hours?: { week?: number; month?: number; total?: number };
   upcomingCourseGoals?: UpcomingGoal[];
+  [key: string]: unknown;
+}
+
+export interface SessionRecord {
+  startTime?: string;
+  endTime?: string;
+  isCompleted?: boolean;
   [key: string]: unknown;
 }
 
@@ -101,10 +110,41 @@ export class StudyLifeApi {
     return this.request<MetricsSummary>("/api/metrics/summary");
   }
 
+  /**
+   * Hours completed today. Summed here because the metrics API does not carry a daily figure -
+   * MetricsHoursDto has week, month and total only. Two days of history are fetched because the
+   * window is server-side and day-aligned; the sum below filters to today in local time.
+   */
+  async getTodayHours(now: number): Promise<number> {
+    const history = await this.request<SessionRecord[]>(
+      "/api/sessions/history?days=2&onlyCompleted=true",
+    );
+    return sumHoursOn(history, now);
+  }
+
   createSession(session: NewSession): Promise<unknown> {
     return this.request("/api/sessions", {
       method: "POST",
       body: JSON.stringify({ ...session, isCompleted: true }),
     });
   }
+}
+
+
+/** Split out from the client so the date arithmetic is testable without a server. */
+export function sumHoursOn(sessions: SessionRecord[], now: number): number {
+  const day = new Date(now);
+  const start = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
+  const end = start + 86_400_000;
+  let ms = 0;
+  for (const s of sessions ?? []) {
+    if (!s?.startTime || !s?.endTime) continue;
+    const from = Date.parse(s.startTime);
+    const to = Date.parse(s.endTime);
+    if (Number.isNaN(from) || Number.isNaN(to) || to <= from) continue;
+    // Clipped to the day, so a session spanning midnight counts only its part of today.
+    const overlap = Math.min(to, end) - Math.max(from, start);
+    if (overlap > 0) ms += overlap;
+  }
+  return ms / 3_600_000;
 }

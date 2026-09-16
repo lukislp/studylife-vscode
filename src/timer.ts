@@ -87,6 +87,16 @@ export function formatCountdown(ms: number): string {
 export interface TransitionOptions {
   /** Only honoured on start; changing it mid-session would re-attribute time already spent. */
   courseId?: number;
+  /**
+   * Milliseconds left in the phase when it was paused, to resume instead of restarting.
+   *
+   * This has to be carried by the caller because the wire shape cannot hold it: pausing sets
+   * phaseEndsAt to null, and StudyLife's own client keeps the remainder in memory
+   * (TimerService.Pause writes it to a private _secondsLeft field that is never sent). Without
+   * it, "pause" is indistinguishable from "stop the clock and start over" - which is exactly how
+   * it behaved before this was threaded through.
+   */
+  resumeMs?: number;
   now: number;
 }
 
@@ -119,10 +129,11 @@ export function transition(
     return base;
   }
 
-  // start: resume what was left, or begin a full phase.
-  const leftover = remainingMs(current, options.now);
+  // start: resume the live phase, then a remembered pause, and only then a full phase.
+  const live = remainingMs(current, options.now);
+  const resume = options.resumeMs !== undefined && options.resumeMs > 0 ? options.resumeMs : undefined;
   const minutes = durationMinutes(base);
-  const durationMs = leftover && leftover > 0 ? leftover : (minutes ?? 25) * 60_000;
+  const durationMs = live && live > 0 ? live : (resume ?? (minutes ?? 25) * 60_000);
   return {
     ...base,
     isRunning: true,

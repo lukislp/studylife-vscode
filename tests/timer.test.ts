@@ -138,3 +138,28 @@ describe("transitions", () => {
     expect(transition(undefined, "start", { now: NOW }).clientNow).toBe(new Date(NOW).toISOString());
   });
 });
+
+describe("resuming after a pause", () => {
+  // The wire shape cannot carry the remainder: pausing sets phaseEndsAt to null, and StudyLife's
+  // own client keeps it in a private field it never sends. Without resumeMs, pause was
+  // indistinguishable from stopping the clock and starting the phase over.
+  it("restarts the phase from the remembered remainder, not from the top", () => {
+    const paused = transition(running(), "pause", { now: NOW });
+    const resumed = transition(paused, "start", { now: NOW, resumeMs: 10 * MIN });
+    expect(Date.parse(resumed.phaseEndsAt as string) - NOW).toBe(10 * MIN);
+  });
+
+  it("prefers a live phase over a stale remembered remainder", () => {
+    // Started elsewhere while this window still held an old pause value.
+    const resumed = transition(running(), "start", { now: NOW, resumeMs: 3 * MIN });
+    expect(Date.parse(resumed.phaseEndsAt as string) - NOW).toBe(10 * MIN);
+  });
+
+  it("falls back to a full phase when the remainder is absent or used up", () => {
+    const paused = transition(running(), "pause", { now: NOW });
+    expect(Date.parse(transition(paused, "start", { now: NOW }).phaseEndsAt as string) - NOW).toBe(25 * MIN);
+    expect(
+      Date.parse(transition(paused, "start", { now: NOW, resumeMs: 0 }).phaseEndsAt as string) - NOW,
+    ).toBe(25 * MIN);
+  });
+});

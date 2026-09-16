@@ -11,6 +11,7 @@ export interface RenderInput {
   timer?: TimerState | undefined;
   metrics?: MetricsSummary | undefined;
   tracked?: Stretch | undefined;
+  todayHours?: number | undefined;
   now: number;
 }
 
@@ -20,7 +21,7 @@ export function renderLabel(input: RenderInput): string {
   if (input.timer?.isRunning) {
     return input.timer.isPaused ? "$(debug-pause) StudyLife" : "$(record) StudyLife";
   }
-  const today = input.metrics?.hours?.today;
+  const today = input.todayHours;
   return today === undefined ? "$(watch) StudyLife" : `$(watch) ${formatHours(today)}`;
 }
 
@@ -37,7 +38,7 @@ export function renderTooltip(input: RenderInput): string {
   lines.push(timerLine);
 
   const hours = input.metrics?.hours;
-  if (hours?.today !== undefined) lines.push(`Today: ${formatHours(hours.today)}`);
+  if (input.todayHours !== undefined) lines.push(`Today: ${formatHours(input.todayHours)}`);
   if (hours?.week !== undefined) lines.push(`This week: ${formatHours(hours.week)}`);
 
   const streak = input.metrics?.streak?.current;

@@ -157,9 +157,23 @@ function html(m: PanelModel, n: string): string {
     padding: 7px 0; border-top: 1px solid var(--vscode-widget-border, rgba(127,127,127,.15));
   }
   .row:first-of-type { border-top: none; }
-  .row .k { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .row .v { color: var(--vscode-descriptionForeground); flex-shrink: 0; font-size: 12px; }
+  /* Both halves may shrink: a course name like "Projekt: Objektorientierte und funktionale
+     Programmierung mit Python" is longer than the whole panel is wide, and flex-shrink: 0 on the
+     value pushed the row past its edge instead of truncating. The label keeps a floor so it never
+     collapses to nothing. */
+  .row .k {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    flex: 0 0 auto; min-width: 3.5em;
+  }
+  .row .v {
+    color: var(--vscode-descriptionForeground); font-size: 12px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    flex: 1 1 auto; text-align: right; min-width: 0;
+  }
   .row .v.overdue { color: var(--vscode-errorForeground); }
+  /* Goal rows are the reverse: the course name is the long half, the countdown is short. */
+  .row.goal .k { flex: 1 1 auto; min-width: 0; }
+  .row.goal .v { flex: 0 0 auto; }
   .row.click { cursor: pointer; }
   .row.click:hover { color: var(--vscode-textLink-foreground); }
   .empty { color: var(--vscode-descriptionForeground); font-size: 12px; padding: 4px 0; }
@@ -209,7 +223,7 @@ function connected(m: PanelModel): string {
     ? m.goals
         .map(
           (g) =>
-            `<div class="row"><span class="k">${escape(g.name)}</span><span class="v${g.overdue ? " overdue" : ""}">${escape(g.due)}</span></div>`,
+            `<div class="row goal"><span class="k">${escape(g.name)}</span><span class="v${g.overdue ? " overdue" : ""}">${escape(g.due)}</span></div>`,
         )
         .join("")
     : `<div class="empty">No open course goals.</div>`;
