@@ -15,6 +15,16 @@ course instead of being lost.
 
 ## What it does
 
+**In the sidebar** — a StudyLife icon in the Activity Bar opens a panel with four sections: the
+timer and its state, today's and this week's hours plus your streak, the next upcoming course
+goals with their countdowns, and this workspace's course and tracked time. Start, pause and stop
+sit as buttons in the panel's title bar, so nothing needs the command palette.
+
+Starting from the panel asks **which course** the session is for. That question is offered only
+while the timer is stopped: changing the course of a session already under way would silently
+re-attribute time that has already been spent, and that history feeds StudyLife's grade and ECTS
+correlations.
+
 **In the status bar** — today's study time, or a recording dot while a focus session runs. The
 tooltip adds this week's hours, your streak, and the next course goal with its countdown. Every
 number comes from StudyLife's own metrics endpoint, the single place those are calculated, so the
@@ -76,7 +86,8 @@ otherwise carry it to every machine you sign in on.
 | --- | --- |
 | `StudyLife: Connect to an instance` | Browser login, stores this installation's key |
 | `StudyLife: Disconnect` | Forgets the local key (revoke it on the server separately) |
-| `StudyLife: Start focus timer` | Starts the shared timer |
+| `StudyLife: Start focus timer` | Starts the shared timer, keeping the current course |
+| `StudyLife: Start focus timer for a course` | Asks which course first |
 | `StudyLife: Pause focus timer` | Pauses it |
 | `StudyLife: Stop focus timer` | Stops it |
 | `StudyLife: Log tracked coding time as a session` | Offers the stretch tracked so far |
@@ -113,10 +124,11 @@ npm run package    # produce the .vsix
 `vscode` stays external in the bundle: it is provided by the editor at runtime, and bundling it
 produces an extension that fails to activate.
 
-The modules without editor dependencies (`oauth.ts`, `activity.ts`, the render functions in
-`statusBar.ts`) hold the rules that are easy to get subtly wrong, and those are what the tests
-cover — PKCE shape, constant-time state comparison, callback parsing, and the stretch/idle
-arithmetic.
+The modules without editor dependencies (`oauth.ts`, `activity.ts`, `sidebarModel.ts`, the render
+functions in `statusBar.ts`) hold the rules that are easy to get subtly wrong, and those are what
+the tests cover — PKCE shape, constant-time state comparison, callback parsing, the stretch/idle
+arithmetic, and every row the sidebar produces. `sidebar.ts` keeps the vscode-facing half separate
+precisely so `sidebarModel.ts` can be tested without an editor.
 
 ## Licence
 
