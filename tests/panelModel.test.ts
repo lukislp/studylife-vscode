@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { UpcomingGoal } from "../src/api.js";
 import { type Snapshot, activeGoals, buildPanel } from "../src/panelModel.js";
 
 const NOW = Date.parse("2026-09-16T12:00:00.000Z");
@@ -105,9 +106,11 @@ describe("activeGoals", () => {
   });
 
   it("drops entries without a usable course id - they could not be started anyway", () => {
-    const goals = [
+    // Typed through UpcomingGoal so the cast stays local to the one deliberately broken entry -
+    // `(typeof goals)[0]` inside the literal would be a circular reference.
+    const goals: UpcomingGoal[] = [
       { courseId: 7, courseName: "Mathe", targetDate: "", daysLeft: 3 },
-      { courseName: "Broken", targetDate: "", daysLeft: 1 } as unknown as (typeof goals)[0],
+      { courseName: "Broken", targetDate: "", daysLeft: 1 } as unknown as UpcomingGoal,
     ];
     expect(activeGoals({ upcomingCourseGoals: goals })).toHaveLength(1);
   });
