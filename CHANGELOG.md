@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/lukislp/studylife-vscode/compare/v1.1.0...v1.2.0) (2026-09-16)
+
+
+### Features
+
+* redesign the panel and fix the timer transitions ([#9](https://github.com/lukislp/studylife-vscode/issues/9)) ([61f761f](https://github.com/lukislp/studylife-vscode/commit/61f761f5cdcdb887b7f4cf43e09093cf476a896d))
+
 # [1.1.0](https://github.com/lukislp/studylife-vscode/compare/v1.0.0...v1.1.0) (2026-09-16)
 
 
