@@ -6,6 +6,7 @@ import { ApiError, type Course, StudyLifeApi, type TimerState } from "./api.js";
 import { ActivityTracker, type Stretch, durationMs, formatDuration } from "./activity.js";
 import { LoginError, clearApiKey, readApiKey, runLogin, storeApiKey } from "./auth.js";
 import { StatusBar } from "./statusBar.js";
+import { StudyLifeTreeProvider } from "./sidebar.js";
 
 const COURSE_KEY_PREFIX = "studylife.course.";
 /** Flow State (52/17) - the closest built-in preset to an uninterrupted coding block. Only used
@@ -15,6 +16,10 @@ const DEFAULT_TIMER_MODE_ID = 2;
 
 let api: StudyLifeApi | undefined;
 let statusBar: StatusBar;
+let tree: StudyLifeTreeProvider;
+/** Course name for the current workspace, resolved lazily so the sidebar can show it without
+ *  an extra request on every poll. */
+let workspaceCourseName: string | undefined;
 let tracker: ActivityTracker;
 let pollTimer: NodeJS.Timeout | undefined;
 let lastTimerState: TimerState | undefined;
@@ -25,12 +30,19 @@ let clientSequence = 0;
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   statusBar = new StatusBar();
   context.subscriptions.push(statusBar);
+  tree = new StudyLifeTreeProvider();
+  context.subscriptions.push(
+    vscode.window.registerTreeDataProvider("studylife.overview", tree),
+  );
   tracker = buildTracker();
 
   context.subscriptions.push(
     vscode.commands.registerCommand("studylife.connect", () => connect(context)),
     vscode.commands.registerCommand("studylife.disconnect", () => disconnect(context)),
     vscode.commands.registerCommand("studylife.startTimer", () => controlTimer("start")),
+    vscode.commands.registerCommand("studylife.startTimerWithCourse", () =>
+      startTimerWithCourse(context),
+    ),
     vscode.commands.registerCommand("studylife.pauseTimer", () => controlTimer("pause")),
     vscode.commands.registerCommand("studylife.stopTimer", () => controlTimer("stop")),
     vscode.commands.registerCommand("studylife.logCodingTime", () => offerOpenStretch(context)),
@@ -74,7 +86,9 @@ async function reconfigure(context: vscode.ExtensionContext): Promise<void> {
 
 async function refresh(): Promise<void> {
   if (!api) {
-    statusBar.render({ connected: false, now: Date.now() });
+    const now = Date.now();
+    statusBar.render({ connected: false, now });
+    tree.update({ connected: false, now });
     return;
   }
   try {
@@ -83,20 +97,24 @@ async function refresh(): Promise<void> {
       api.getMetricsSummary(),
     ]);
     lastTimerState = timerState;
-    statusBar.render({
+    const snapshot = {
       connected: true,
       timer: timerState,
       metrics,
       tracked: tracker.peek(),
       now: Date.now(),
-    });
+    };
+    statusBar.render(snapshot);
+    tree.update({ ...snapshot, courseName: workspaceCourseName });
   } catch (error) {
     // A failed poll is not worth a modal - the status bar going quiet is signal enough, and the
     // next tick may well succeed. A scope problem is the exception: it never fixes itself.
     if (error instanceof ApiError && error.status === 403) {
       void vscode.window.showErrorMessage(`StudyLife: ${error.message}`);
     }
-    statusBar.render({ connected: true, now: Date.now() });
+    const now = Date.now();
+    statusBar.render({ connected: true, now });
+    tree.update({ connected: true, now, courseName: workspaceCourseName });
   }
 }
 
@@ -139,7 +157,10 @@ async function disconnect(context: vscode.ExtensionContext): Promise<void> {
   );
 }
 
-async function controlTimer(action: "start" | "pause" | "stop"): Promise<void> {
+async function controlTimer(
+  action: "start" | "pause" | "stop",
+  courseId?: number,
+): Promise<void> {
   if (!api) {
     void vscode.window.showWarningMessage("StudyLife: not connected yet.");
     return;
@@ -151,6 +172,7 @@ async function controlTimer(action: "start" | "pause" | "stop"): Promise<void> {
     isRunning: action !== "stop",
     isPaused: action === "pause",
     clientSequence,
+    ...(courseId === undefined ? {} : { courseId }),
   };
   try {
     // The server answers with the authoritative row, not an echo - render that, so a transition
@@ -161,6 +183,22 @@ async function controlTimer(action: "start" | "pause" | "stop"): Promise<void> {
     const message = error instanceof ApiError ? error.message : String(error);
     void vscode.window.showErrorMessage(`StudyLife: ${message}`);
   }
+}
+
+/**
+ * Starts the timer after asking which course it is for. Offered only while the timer is stopped -
+ * changing the course of a session already under way would silently re-attribute time that has
+ * already been spent, and that history feeds the grade correlations.
+ */
+async function startTimerWithCourse(context: vscode.ExtensionContext): Promise<void> {
+  if (!api) {
+    void vscode.window.showWarningMessage("StudyLife: not connected yet.");
+    return;
+  }
+  const courseId = await pickCourse("Start a focus session for");
+  if (courseId === undefined) return;
+  await controlTimer("start", courseId);
+  await rememberCourseName(context, courseId);
 }
 
 function onActivity(context: vscode.ExtensionContext): void {
@@ -215,9 +253,8 @@ async function resolveCourse(context: vscode.ExtensionContext): Promise<number |
   return pickWorkspaceCourse(context);
 }
 
-async function pickWorkspaceCourse(
-  context: vscode.ExtensionContext,
-): Promise<number | undefined> {
+/** The course picker on its own, so both the workspace mapping and the timer start can use it. */
+async function pickCourse(title: string): Promise<number | undefined> {
   if (!api) {
     void vscode.window.showWarningMessage("StudyLife: not connected yet.");
     return undefined;
@@ -231,14 +268,35 @@ async function pickWorkspaceCourse(
   }
   const picked = await vscode.window.showQuickPick(
     courses.map((c) => ({ label: c.name, id: c.id })),
-    {
-      title: `Course for ${vscode.workspace.name ?? "this workspace"}`,
-      ignoreFocusOut: true,
-    },
+    { title, ignoreFocusOut: true },
   );
-  if (!picked) return undefined;
-  await context.globalState.update(workspaceKey(), picked.id);
-  return picked.id;
+  return picked?.id;
+}
+
+async function pickWorkspaceCourse(
+  context: vscode.ExtensionContext,
+): Promise<number | undefined> {
+  const id = await pickCourse(`Course for ${vscode.workspace.name ?? "this workspace"}`);
+  if (id === undefined) return undefined;
+  await context.globalState.update(workspaceKey(), id);
+  await rememberCourseName(context, id);
+  return id;
+}
+
+/** Resolves the id to a name once, so the sidebar can show it without a request per poll. */
+async function rememberCourseName(
+  context: vscode.ExtensionContext,
+  courseId: number,
+): Promise<void> {
+  try {
+    const courses = await api?.getCourses();
+    workspaceCourseName = courses?.find((c) => c.id === courseId)?.name;
+  } catch {
+    // A name we cannot resolve is not worth an error to the user - the sidebar falls back to
+    // "not set" and everything else keeps working.
+    workspaceCourseName = undefined;
+  }
+  await refresh();
 }
 
 function workspaceKey(): string {

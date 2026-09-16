@@ -42,15 +42,23 @@
       },
       {
         "command": "studylife.startTimer",
-        "title": "StudyLife: Start focus timer"
+        "title": "StudyLife: Start focus timer",
+        "icon": "$(play)"
+      },
+      {
+        "command": "studylife.startTimerWithCourse",
+        "title": "StudyLife: Start focus timer for a course",
+        "icon": "$(play-circle)"
       },
       {
         "command": "studylife.pauseTimer",
-        "title": "StudyLife: Pause focus timer"
+        "title": "StudyLife: Pause focus timer",
+        "icon": "$(debug-pause)"
       },
       {
         "command": "studylife.stopTimer",
-        "title": "StudyLife: Stop focus timer"
+        "title": "StudyLife: Stop focus timer",
+        "icon": "$(primitive-square)"
       },
       {
         "command": "studylife.logCodingTime",
@@ -62,7 +70,8 @@
       },
       {
         "command": "studylife.refresh",
-        "title": "StudyLife: Refresh now"
+        "title": "StudyLife: Refresh now",
+        "icon": "$(refresh)"
       }
     ],
     "configuration": {
@@ -100,6 +109,48 @@
           "description": "Shorter stretches are dropped instead of being offered - avoids noise from a quick edit."
         }
       }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "studylife",
+          "title": "StudyLife",
+          "icon": "media/studylife.svg"
+        }
+      ]
+    },
+    "views": {
+      "studylife": [
+        {
+          "id": "studylife.overview",
+          "name": "Overview",
+          "icon": "media/studylife.svg"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "studylife.startTimerWithCourse",
+          "when": "view == studylife.overview",
+          "group": "navigation@1"
+        },
+        {
+          "command": "studylife.pauseTimer",
+          "when": "view == studylife.overview",
+          "group": "navigation@2"
+        },
+        {
+          "command": "studylife.stopTimer",
+          "when": "view == studylife.overview",
+          "group": "navigation@3"
+        },
+        {
+          "command": "studylife.refresh",
+          "when": "view == studylife.overview",
+          "group": "navigation@4"
+        }
+      ]
     }
   },
   "scripts": {
