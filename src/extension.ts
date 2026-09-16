@@ -15,8 +15,12 @@ import { StatusBar } from "./statusBar.js";
 import { StudyLifePanel } from "./panel.js";
 import { activeGoals } from "./panelModel.js";
 import { transition } from "./timer.js";
+import { type TimerRun, decide } from "./runLog.js";
 
 const COURSE_KEY_PREFIX = "studylife.course.";
+/** The run this window started, kept in globalState so it survives a window reload -
+ *  a focus block easily outlives one. */
+const RUN_KEY = "studylife.activeRun";
 /** Flow State (52/17) - the closest built-in preset to an uninterrupted coding block. Only used
  *  as the default for a logged stretch; starting the timer sends no mode at all and lets the
  *  server keep whatever the user last chose. */
@@ -47,12 +51,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(
     vscode.commands.registerCommand("studylife.connect", () => connect(context)),
     vscode.commands.registerCommand("studylife.disconnect", () => disconnect(context)),
-    vscode.commands.registerCommand("studylife.startTimer", () => controlTimer("start")),
+    vscode.commands.registerCommand("studylife.startTimer", () => controlTimer("start", context)),
     vscode.commands.registerCommand("studylife.startTimerWithCourse", () =>
       startTimerWithCourse(context),
     ),
-    vscode.commands.registerCommand("studylife.pauseTimer", () => controlTimer("pause")),
-    vscode.commands.registerCommand("studylife.stopTimer", () => controlTimer("stop")),
+    vscode.commands.registerCommand("studylife.pauseTimer", () => controlTimer("pause", context)),
+    vscode.commands.registerCommand("studylife.stopTimer", () => controlTimer("stop", context)),
     vscode.commands.registerCommand("studylife.logCodingTime", () => offerOpenStretch(context)),
     vscode.commands.registerCommand("studylife.setWorkspaceCourse", () =>
       pickWorkspaceCourse(context),
@@ -168,6 +172,7 @@ async function disconnect(context: vscode.ExtensionContext): Promise<void> {
 
 async function controlTimer(
   action: "start" | "pause" | "stop",
+  context: vscode.ExtensionContext,
   courseId?: number,
 ): Promise<void> {
   if (!api) {
@@ -175,18 +180,65 @@ async function controlTimer(
     return;
   }
   const base = lastTimerState ?? (await api.getTimerState());
+  const now = Date.now();
   const next = transition(base, action, {
-    now: Date.now(),
+    now,
     ...(courseId === undefined ? {} : { courseId }),
   });
   try {
     // The server answers with the authoritative row, not an echo - render that, so a transition
     // it resolved differently is visible immediately instead of at the next poll.
     lastTimerState = await api.saveTimerState(next);
+
+    if (action === "start" && courseId !== undefined) {
+      const run: TimerRun = {
+        courseId,
+        startedAt: now,
+        sessionId: base?.sessionId ?? null,
+        ...(workspaceCourseName === undefined ? {} : { courseName: workspaceCourseName }),
+      };
+      await context.globalState.update(RUN_KEY, run);
+    }
+    if (action === "stop") await bookRun(context, base?.sessionId, now);
+
     await refresh();
   } catch (error) {
     const message = error instanceof ApiError ? error.message : String(error);
     void vscode.window.showErrorMessage(`StudyLife: ${message}`);
+  }
+}
+
+/**
+ * Turns a finished run into a study session, unless StudyLife was already accounting for it.
+ * See runLog.ts for why this is the extension's job at all.
+ */
+async function bookRun(
+  context: vscode.ExtensionContext,
+  plannedSessionId: number | null | undefined,
+  now: number,
+): Promise<void> {
+  const run = context.globalState.get<TimerRun>(RUN_KEY);
+  const decision = decide(run, plannedSessionId, now);
+  await context.globalState.update(RUN_KEY, undefined);
+  if (!decision.log || !api) return;
+
+  try {
+    await api.createSession({
+      courseId: decision.courseId,
+      startTime: new Date(decision.startedAt).toISOString(),
+      endTime: new Date(decision.endedAt).toISOString(),
+      timerModeId: lastTimerState?.timerModeId ?? DEFAULT_TIMER_MODE_ID,
+      ...(run?.courseName === undefined ? {} : { topic: run.courseName }),
+    });
+    const label = formatDuration(decision.endedAt - decision.startedAt);
+    void vscode.window.showInformationMessage(
+      `StudyLife: logged ${label}${run?.courseName ? ` for ${run.courseName}` : ""}.`,
+    );
+  } catch (error) {
+    // Losing the session silently would be the worst outcome - the user stopped a timer they
+    // believed was being recorded.
+    const message = error instanceof ApiError ? error.message : String(error);
+    void vscode.window.showErrorMessage(`StudyLife: the session could not be saved - ${message}`);
   }
 }
 
@@ -202,7 +254,7 @@ async function startTimerWithCourse(context: vscode.ExtensionContext): Promise<v
   }
   const courseId = await pickCourse("Start a focus session for");
   if (courseId === undefined) return;
-  await controlTimer("start", courseId);
+  await controlTimer("start", context, courseId);
   await rememberCourseName(context, courseId);
 }
 
