@@ -1,0 +1,119 @@
+{
+  "name": "studylife-vscode",
+  "displayName": "StudyLife",
+  "description": "Control your StudyLife focus timer from the editor and turn coding time into study sessions.",
+  "version": "0.0.0-semantic-release",
+  "publisher": "lukislp",
+  "license": "AGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lukislp/studylife-vscode.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lukislp/studylife-vscode/issues"
+  },
+  "engines": {
+    "vscode": "^1.90.0",
+    "node": ">=24"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "studylife",
+    "pomodoro",
+    "focus",
+    "timer",
+    "time tracking"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "studylife.connect",
+        "title": "StudyLife: Connect to an instance"
+      },
+      {
+        "command": "studylife.disconnect",
+        "title": "StudyLife: Disconnect"
+      },
+      {
+        "command": "studylife.startTimer",
+        "title": "StudyLife: Start focus timer"
+      },
+      {
+        "command": "studylife.pauseTimer",
+        "title": "StudyLife: Pause focus timer"
+      },
+      {
+        "command": "studylife.stopTimer",
+        "title": "StudyLife: Stop focus timer"
+      },
+      {
+        "command": "studylife.logCodingTime",
+        "title": "StudyLife: Log tracked coding time as a session"
+      },
+      {
+        "command": "studylife.setWorkspaceCourse",
+        "title": "StudyLife: Set the course for this workspace"
+      },
+      {
+        "command": "studylife.refresh",
+        "title": "StudyLife: Refresh now"
+      }
+    ],
+    "configuration": {
+      "title": "StudyLife",
+      "properties": {
+        "studylife.instanceUrl": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Base URL of your StudyLife instance, e.g. `https://studylife.example.com`. The API key itself is never stored here - it lives in the editor's secret storage."
+        },
+        "studylife.pollSeconds": {
+          "type": "number",
+          "default": 30,
+          "minimum": 10,
+          "maximum": 300,
+          "description": "How often the status bar refreshes from the server."
+        },
+        "studylife.trackCodingTime": {
+          "type": "boolean",
+          "default": true,
+          "description": "Watch editing activity per workspace and offer to log it as a study session. Nothing is ever sent without you confirming it."
+        },
+        "studylife.idleMinutes": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 60,
+          "description": "Editing pause after which a tracked coding stretch is considered finished."
+        },
+        "studylife.minimumSuggestionMinutes": {
+          "type": "number",
+          "default": 20,
+          "minimum": 5,
+          "maximum": 240,
+          "description": "Shorter stretches are dropped instead of being offered - avoids noise from a quick edit."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "package": "npx --yes @vscode/vsce package --no-dependencies --out studylife-vscode.vsix"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/vscode": "^1.90.0",
+    "esbuild": "^0.28.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0"
+  }
+}
