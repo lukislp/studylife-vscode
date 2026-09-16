@@ -15,15 +15,22 @@ course instead of being lost.
 
 ## What it does
 
-**In the sidebar** — a StudyLife icon in the Activity Bar opens a panel with four sections: the
-timer and its state, today's and this week's hours plus your streak, the next upcoming course
-goals with their countdowns, and this workspace's course and tracked time. Start, pause and stop
-sit as buttons in the panel's title bar, so nothing needs the command palette.
+**In the sidebar** — a StudyLife icon in the Activity Bar opens a panel with a timer card at the
+top: the phase, a large countdown, the mode and round, and a progress bar through the current
+focus or break block. **Start, pause and stop are buttons in the card.** Below it sit today's and
+this week's hours with your streak, your open course goals with their countdowns, and this
+workspace's course and tracked time.
 
-Starting from the panel asks **which course** the session is for. That question is offered only
-while the timer is stopped: changing the course of a session already under way would silently
-re-attribute time that has already been spent, and that history feeds StudyLife's grade and ECTS
-correlations.
+The progress bar is only ever determinate when the length is actually known. Custom timer modes
+live in your StudyLife settings, which this extension has no scope to read, so for those the bar
+sweeps instead of claiming a fraction it cannot compute.
+
+Starting from the panel asks **which course** the session is for, and offers only the courses you
+are currently working towards — those with an open course goal. StudyLife has no "active" flag on
+a course and the built-in catalogue alone carries around sixty, which is an unusable list to pick
+from. The full catalogue stays one click away. The question is offered only while the timer is
+stopped: changing the course of a session already under way would silently re-attribute time that
+has already been spent, and that history feeds StudyLife's grade and ECTS correlations.
 
 **In the status bar** — today's study time, or a recording dot while a focus session runs. The
 tooltip adds this week's hours, your streak, and the next course goal with its countdown. Every
@@ -124,11 +131,15 @@ npm run package    # produce the .vsix
 `vscode` stays external in the bundle: it is provided by the editor at runtime, and bundling it
 produces an extension that fails to activate.
 
-The modules without editor dependencies (`oauth.ts`, `activity.ts`, `sidebarModel.ts`, the render
-functions in `statusBar.ts`) hold the rules that are easy to get subtly wrong, and those are what
-the tests cover — PKCE shape, constant-time state comparison, callback parsing, the stretch/idle
-arithmetic, and every row the sidebar produces. `sidebar.ts` keeps the vscode-facing half separate
-precisely so `sidebarModel.ts` can be tested without an editor.
+The modules without editor dependencies (`oauth.ts`, `activity.ts`, `timer.ts`, `panelModel.ts`,
+the render functions in `statusBar.ts`) hold the rules that are easy to get subtly wrong, and
+those are what the tests cover — PKCE shape, constant-time state comparison, callback parsing, the
+stretch/idle arithmetic, the timer transitions, and everything the panel displays. `panel.ts`
+keeps the vscode-facing half separate precisely so `panelModel.ts` can be tested without an editor.
+
+`timer.ts` is worth reading before changing anything about the timer: StudyLife's wire shape has
+no "paused" flag, and the server accepts unknown JSON properties silently — so a wrong field name
+produces a green build and a button that does nothing.
 
 ## Licence
 
