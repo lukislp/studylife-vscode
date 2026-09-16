@@ -20,6 +20,8 @@ export interface Snapshot {
   metrics?: MetricsSummary | undefined;
   tracked?: Stretch | undefined;
   courseName?: string | undefined;
+  /** Summed from the session history - the metrics API carries no daily figure. */
+  todayHours?: number | undefined;
   now: number;
 }
 
@@ -61,7 +63,7 @@ export function buildPanel(s: Snapshot): PanelModel {
   return {
     connected: s.connected,
     timer: timerCard(s),
-    stats: stats(s.metrics),
+    stats: stats(s.metrics, s.todayHours),
     goals: goals(s.metrics),
     ...(s.courseName === undefined ? {} : { courseName: s.courseName }),
     ...(s.tracked === undefined
@@ -89,11 +91,11 @@ function timerCard(s: Snapshot): TimerCard {
   };
 }
 
-function stats(metrics: MetricsSummary | undefined): StatTile[] {
+function stats(metrics: MetricsSummary | undefined, todayHours: number | undefined): StatTile[] {
   const hours = metrics?.hours;
   const streak = metrics?.streak?.current;
   const tiles: StatTile[] = [
-    { label: "Today", value: formatHours(hours?.today) },
+    { label: "Today", value: formatHours(todayHours) },
     { label: "This week", value: formatHours(hours?.week) },
   ];
   // A streak of zero is still worth showing - it is a fact, not a missing value.

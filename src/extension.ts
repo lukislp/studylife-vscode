@@ -14,13 +14,16 @@ import { LoginError, clearApiKey, readApiKey, runLogin, storeApiKey } from "./au
 import { StatusBar } from "./statusBar.js";
 import { StudyLifePanel } from "./panel.js";
 import { activeGoals } from "./panelModel.js";
-import { transition } from "./timer.js";
+import { remainingMs, transition } from "./timer.js";
 import { type TimerRun, decide } from "./runLog.js";
 
 const COURSE_KEY_PREFIX = "studylife.course.";
 /** The run this window started, kept in globalState so it survives a window reload -
  *  a focus block easily outlives one. */
 const RUN_KEY = "studylife.activeRun";
+/** Milliseconds left when the timer was paused. The wire shape cannot carry this - see
+ *  TransitionOptions.resumeMs - so the remainder would otherwise be lost on every pause. */
+const RESUME_KEY = "studylife.resumeMs";
 /** Flow State (52/17) - the closest built-in preset to an uninterrupted coding block. Only used
  *  as the default for a logged stretch; starting the timer sends no mode at all and lets the
  *  server keep whatever the user last chose. */
@@ -104,9 +107,13 @@ async function refresh(): Promise<void> {
     return;
   }
   try {
-    const [timerState, metrics] = await Promise.all([
+    const now = Date.now();
+    // The daily figure is summed from the session history: MetricsHoursDto has week, month and
+    // total, but no today. A failure there must not blank the rest of the panel.
+    const [timerState, metrics, todayHours] = await Promise.all([
       api.getTimerState(),
       api.getMetricsSummary(),
+      api.getTodayHours(now).catch(() => undefined),
     ]);
     lastTimerState = timerState;
     lastMetrics = metrics;
@@ -115,7 +122,8 @@ async function refresh(): Promise<void> {
       timer: timerState,
       metrics,
       tracked: tracker.peek(),
-      now: Date.now(),
+      ...(todayHours === undefined ? {} : { todayHours }),
+      now,
     };
     statusBar.render(snapshot);
     panel.update({ ...snapshot, courseName: workspaceCourseName });
@@ -181,13 +189,23 @@ async function controlTimer(
   }
   const base = lastTimerState ?? (await api.getTimerState());
   const now = Date.now();
+  const resumeMs = context.globalState.get<number>(RESUME_KEY);
   const next = transition(base, action, {
     now,
     ...(courseId === undefined ? {} : { courseId }),
+    ...(action === "start" && resumeMs !== undefined ? { resumeMs } : {}),
   });
   try {
     // The server answers with the authoritative row, not an echo - render that, so a transition
     // it resolved differently is visible immediately instead of at the next poll.
+    // Captured from the state as it stood BEFORE the write, which is the only moment the
+    // remainder still exists anywhere.
+    if (action === "pause") {
+      await context.globalState.update(RESUME_KEY, remainingMs(base, now));
+    } else {
+      await context.globalState.update(RESUME_KEY, undefined);
+    }
+
     lastTimerState = await api.saveTimerState(next);
 
     if (action === "start" && courseId !== undefined) {
