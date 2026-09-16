@@ -32,6 +32,14 @@ from. The full catalogue stays one click away. The question is offered only whil
 stopped: changing the course of a session already under way would silently re-attribute time that
 has already been spent, and that history feeds StudyLife's grade and ECTS correlations.
 
+**The timer books its own time.** StudyLife's timer does not record anything by itself — the web
+app attaches it to a session the planner already created, and the timer state carries neither a
+course nor a start time. So when you start a session here and nothing was planned for that slot,
+the extension remembers what it started and writes the session when you stop, for the course you
+picked. If a planned session *was* attached, nothing is written: StudyLife is already accounting
+for that time, and a second row would double-count it in the history the grade correlations are
+computed from. Runs under a minute are dropped as mis-clicks.
+
 **In the status bar** — today's study time, or a recording dot while a focus session runs. The
 tooltip adds this week's hours, your streak, and the next course goal with its countdown. Every
 number comes from StudyLife's own metrics endpoint, the single place those are calculated, so the
@@ -137,9 +145,10 @@ those are what the tests cover — PKCE shape, constant-time state comparison, c
 stretch/idle arithmetic, the timer transitions, and everything the panel displays. `panel.ts`
 keeps the vscode-facing half separate precisely so `panelModel.ts` can be tested without an editor.
 
-`timer.ts` is worth reading before changing anything about the timer: StudyLife's wire shape has
-no "paused" flag, and the server accepts unknown JSON properties silently — so a wrong field name
-produces a green build and a button that does nothing.
+`timer.ts` and `runLog.ts` are worth reading before changing anything about the timer. The wire
+shape has neither a "paused" flag nor a course, and the server accepts unknown JSON properties
+silently — so a wrong field name produces a green build and a control that does nothing. Both
+mistakes were made here before the shape was checked against `TimerStateEntity`.
 
 ## Licence
 
