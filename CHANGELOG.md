@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/lukislp/studylife-vscode/compare/v1.3.2...v1.4.0) (2026-09-17)
+
+
+### Features
+
+* let the focus mode be chosen ([#13](https://github.com/lukislp/studylife-vscode/issues/13)) ([961a1a9](https://github.com/lukislp/studylife-vscode/commit/961a1a9281cdbb1893dbf953e21926c36356f72c))
+
 ## [1.3.2](https://github.com/lukislp/studylife-vscode/compare/v1.3.1...v1.3.2) (2026-09-17)
 
 
