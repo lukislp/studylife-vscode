@@ -34,6 +34,36 @@ export interface TimerState {
 
 export type Phase = "stopped" | "focus" | "break";
 
+export interface ModeChoice {
+  id: number;
+  name: string;
+  /** "25 min focus / 5 min break" - what the preset actually does. */
+  detail: string;
+  current: boolean;
+}
+
+/**
+ * The modes offerable as a choice. Only the built-ins: custom modes (id >= 100) are stored in the
+ * user's StudyLife settings, which this extension has no scope to read, so it can neither name
+ * nor time them. A custom mode already in use is left alone rather than silently replaced - it
+ * simply is not in this list, and the current one stays selected until the user picks another.
+ */
+export function modeChoices(current: TimerState | undefined): ModeChoice[] {
+  const active = current?.timerModeId;
+  return Object.entries(BUILT_IN_MODES).map(([id, m]) => ({
+    id: Number(id),
+    name: m.name,
+    detail: `${m.focus} min focus / ${m.break} min break`,
+    current: Number(id) === active,
+  }));
+}
+
+/** A mode may only be changed while the timer is stopped: switching mid-phase would leave the
+ *  running countdown measured against a length that no longer applies. */
+export function canChangeMode(current: TimerState | undefined): boolean {
+  return !current?.isRunning;
+}
+
 export function phaseOf(state: TimerState | undefined): Phase {
   if (!state?.isRunning) return "stopped";
   return state.isBreak ? "break" : "focus";
@@ -87,6 +117,8 @@ export function formatCountdown(ms: number): string {
 export interface TransitionOptions {
   /** Only honoured on start; changing it mid-session would re-attribute time already spent. */
   courseId?: number;
+  /** Switches the preset. Honoured on start only, for the same reason as the course. */
+  modeId?: number;
   /**
    * Milliseconds left in the phase when it was paused, to resume instead of restarting.
    *
@@ -117,7 +149,7 @@ export function transition(
     isRunning: false,
     isBreak: current?.isBreak ?? false,
     currentRound: current?.currentRound ?? 1,
-    timerModeId: current?.timerModeId ?? 1,
+    timerModeId: options.modeId ?? current?.timerModeId ?? 1,
     phaseEndsAt: null,
     clientNow: new Date(options.now).toISOString(),
   };

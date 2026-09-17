@@ -7,6 +7,7 @@ import type { MetricsSummary, UpcomingGoal } from "./api.js";
 import { type Stretch, durationMs, formatDuration, formatHours } from "./activity.js";
 import {
   type TimerState,
+  canChangeMode,
   formatCountdown,
   modeName,
   phaseOf,
@@ -36,6 +37,9 @@ export interface TimerCard {
   mode?: string | undefined;
   round?: string | undefined;
   running: boolean;
+  /** Whether the preset may be changed right now - not while a phase is counting down against
+   *  the current length. */
+  canChangeMode: boolean;
 }
 
 export interface StatTile {
@@ -84,6 +88,7 @@ function timerCard(s: Snapshot): TimerCard {
   return {
     phase: phase === "stopped" ? "Stopped" : phase === "break" ? "Break" : "Focus",
     running: phase !== "stopped",
+    canChangeMode: canChangeMode(s.timer),
     ...(remaining === undefined ? {} : { countdown: formatCountdown(remaining) }),
     ...(fraction === undefined ? {} : { progress: fraction }),
     ...(modeName(s.timer) === undefined ? {} : { mode: modeName(s.timer) }),
