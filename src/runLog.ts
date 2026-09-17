@@ -21,8 +21,14 @@ export interface TimerRun {
   sessionId?: number | null;
 }
 
-/** Shorter than this and a run is an accident - a mis-click, or a start immediately undone. */
-export const MINIMUM_LOGGABLE_MS = 60_000;
+/**
+ * Below this a run is an accident - a start immediately undone, or a mis-click on the panel.
+ *
+ * Ten seconds, not the minute it started as: a deliberate one-minute focus block is a real
+ * session, and dropping it silently is worse than recording something short. Anything dropped is
+ * now reported rather than discarded quietly, which is what made the first threshold hurt.
+ */
+export const MINIMUM_LOGGABLE_MS = 10_000;
 
 export type Decision =
   | { log: true; courseId: number; startedAt: number; endedAt: number }

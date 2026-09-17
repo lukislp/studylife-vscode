@@ -31,8 +31,15 @@ describe("decide", () => {
     expect(decide(undefined, null, NOW)).toEqual({ log: false, reason: "no-run" });
   });
 
+  it("logs a deliberate one-minute block - short is not the same as accidental", () => {
+    // The threshold started at a minute and silently swallowed exactly this case.
+    expect(decide(run({ startedAt: NOW - 60_000 }), null, NOW).log).toBe(true);
+    expect(decide(run({ startedAt: NOW - 45_000 }), null, NOW).log).toBe(true);
+    expect(decide(run({ startedAt: NOW - 11_000 }), null, NOW).log).toBe(true);
+  });
+
   it("does not log a run too short to be real", () => {
-    const d = decide(run({ startedAt: NOW - 20_000 }), null, NOW);
+    const d = decide(run({ startedAt: NOW - 4_000 }), null, NOW);
     expect(d).toEqual({ log: false, reason: "too-short" });
   });
 

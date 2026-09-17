@@ -238,7 +238,26 @@ async function bookRun(
   const run = context.globalState.get<TimerRun>(RUN_KEY);
   const decision = decide(run, plannedSessionId, now);
   await context.globalState.update(RUN_KEY, undefined);
-  if (!decision.log || !api) return;
+
+  if (!decision.log) {
+    // Never silent. Stopping a timer and getting nothing, with no word about why, is
+    // indistinguishable from the feature being broken - which is exactly how it read the first
+    // time a short run was dropped.
+    if (decision.reason === "too-short" && run) {
+      const label = formatDuration(now - run.startedAt);
+      void vscode.window.showInformationMessage(
+        `StudyLife: ${label} was too short to record as a session.`,
+      );
+    } else if (decision.reason === "no-run") {
+      void vscode.window.showInformationMessage(
+        "StudyLife: nothing recorded - this window did not start the session, so it has no course or start time to book.",
+      );
+    }
+    // "planned" stays quiet on purpose: StudyLife is already accounting for that time, so
+    // there is nothing the user needs to do or know.
+    return;
+  }
+  if (!api) return;
 
   try {
     await api.createSession({
