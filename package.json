@@ -2,7 +2,7 @@
   "name": "studylife-vscode",
   "displayName": "StudyLife",
   "description": "Control your StudyLife focus timer from the editor and turn coding time into study sessions.",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "publisher": "lukislp",
   "license": "AGPL-3.0-or-later",
   "repository": {
@@ -154,7 +154,7 @@
     "package": "npx --yes @vscode/vsce package --no-dependencies --out studylife-vscode.vsix"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
+    "@types/node": "^26.5.1",
     "@types/vscode": "1.90.0",
     "esbuild": "^0.28.0",
     "prettier": "^3.0.0",
