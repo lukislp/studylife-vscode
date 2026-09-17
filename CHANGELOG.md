@@ -1,3 +1,10 @@
+## [1.3.2](https://github.com/lukislp/studylife-vscode/compare/v1.3.1...v1.3.2) (2026-09-17)
+
+
+### Bug Fixes
+
+* stop discarding short timer runs in silence ([#12](https://github.com/lukislp/studylife-vscode/issues/12)) ([4451759](https://github.com/lukislp/studylife-vscode/commit/4451759f3fd6b63c4611ad2cafc5693fad178f1e))
+
 ## [1.3.1](https://github.com/lukislp/studylife-vscode/compare/v1.3.0...v1.3.1) (2026-09-16)
 
 
