@@ -115,6 +115,8 @@ function html(m: PanelModel, n: string): string {
     font-variant-numeric: tabular-nums; margin: 10px 0 4px;
   }
   .sub { font-size: 12px; color: var(--vscode-descriptionForeground); }
+  .sub .pick { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+  .sub .pick:hover { color: var(--vscode-textLink-foreground); }
   /* The bar: determinate when the mode length is known, a sweep when it is not. Never a
      made-up fraction - see panelModel.buildPanel. */
   .track {
@@ -209,9 +211,14 @@ function connected(m: PanelModel): string {
       : `<div class="track live"><div class="fill" style="width:${Math.round(t.progress * 100)}%"></div></div>`
     : `<div class="track"><div class="fill" style="width:0%"></div></div>`;
 
-  const meta = [t.mode, t.round]
-    .filter((x): x is string => typeof x === "string" && x.length > 0)
-    .map(escape)
+  // The mode is its own clickable element, and shows even when unset - otherwise the only way to
+  // discover that the preset is choosable would be the command palette.
+  const modeLabel = t.mode ?? "Choose mode";
+  const modePart = t.canChangeMode
+    ? `<span class="pick" data-command="studylife.setTimerMode">${escape(modeLabel)}</span>`
+    : escape(modeLabel);
+  const meta = [modePart, t.round ? escape(t.round) : ""]
+    .filter((x) => x.length > 0)
     .join(" · ");
 
   const actions = t.running
@@ -231,7 +238,7 @@ function connected(m: PanelModel): string {
   return `<div class="card">
   <div class="phase"><span class="dot${t.running ? " live" : ""}"></span>${escape(t.phase)}</div>
   <div class="countdown">${escape(t.countdown ?? "--:--")}</div>
-  ${meta ? `<div class="sub">${meta}</div>` : ""}
+  <div class="sub">${meta}</div>
   ${bar}
   <div class="actions">${actions}</div>
 </div>

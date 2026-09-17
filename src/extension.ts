@@ -14,7 +14,7 @@ import { LoginError, clearApiKey, readApiKey, runLogin, storeApiKey } from "./au
 import { StatusBar } from "./statusBar.js";
 import { StudyLifePanel } from "./panel.js";
 import { activeGoals } from "./panelModel.js";
-import { remainingMs, transition } from "./timer.js";
+import { canChangeMode, modeChoices, remainingMs, transition } from "./timer.js";
 import { type TimerRun, decide } from "./runLog.js";
 
 const COURSE_KEY_PREFIX = "studylife.course.";
@@ -24,6 +24,10 @@ const RUN_KEY = "studylife.activeRun";
 /** Milliseconds left when the timer was paused. The wire shape cannot carry this - see
  *  TransitionOptions.resumeMs - so the remainder would otherwise be lost on every pause. */
 const RESUME_KEY = "studylife.resumeMs";
+/** The preset to start with. Kept locally because a stopped timer still carries the last
+ *  mode on the server, and writing one just to remember a preference would be a visible
+ *  state change for every other device. */
+const MODE_KEY = "studylife.timerMode";
 /** Flow State (52/17) - the closest built-in preset to an uninterrupted coding block. Only used
  *  as the default for a logged stretch; starting the timer sends no mode at all and lets the
  *  server keep whatever the user last chose. */
@@ -64,6 +68,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand("studylife.setWorkspaceCourse", () =>
       pickWorkspaceCourse(context),
     ),
+    vscode.commands.registerCommand("studylife.setTimerMode", () => pickTimerMode(context)),
     vscode.commands.registerCommand("studylife.refresh", () => refresh()),
     vscode.workspace.onDidChangeTextDocument(() => onActivity(context)),
     vscode.workspace.onDidChangeConfiguration((e) => {
@@ -421,6 +426,41 @@ async function rememberCourseName(
     // A name we cannot resolve is not worth an error to the user - the sidebar falls back to
     // "not set" and everything else keeps working.
     workspaceCourseName = undefined;
+  }
+  await refresh();
+}
+
+/**
+ * Picks the focus preset. Only the built-in nine are offered - custom modes live in the user's
+ * StudyLife settings, which this extension cannot read, so it can neither name nor time them.
+ */
+async function pickTimerMode(context: vscode.ExtensionContext): Promise<void> {
+  if (!canChangeMode(lastTimerState)) {
+    void vscode.window.showWarningMessage(
+      "StudyLife: stop the timer before changing the mode - the running countdown is measured against the current length.",
+    );
+    return;
+  }
+  const remembered = context.globalState.get<number>(MODE_KEY);
+  const picked = await vscode.window.showQuickPick(
+    modeChoices(lastTimerState).map((m) => ({
+      label: m.current || m.id === remembered ? `$(check) ${m.name}` : m.name,
+      description: m.detail,
+      id: m.id,
+    })),
+    { title: "Focus mode for the next session", ignoreFocusOut: true, matchOnDescription: true },
+  );
+  if (!picked) return;
+  await context.globalState.update(MODE_KEY, picked.id);
+  // Written through immediately so the panel and every other device show the new preset rather
+  // than only finding out when the next session starts.
+  if (api && lastTimerState) {
+    try {
+      lastTimerState = await api.saveTimerState({ ...lastTimerState, timerModeId: picked.id });
+    } catch {
+      // A failed write is not worth an error here - the preference is stored locally and the
+      // next start carries it anyway.
+    }
   }
   await refresh();
 }

@@ -103,6 +103,7 @@ otherwise carry it to every machine you sign in on.
 | `StudyLife: Disconnect` | Forgets the local key (revoke it on the server separately) |
 | `StudyLife: Start focus timer` | Starts the shared timer, keeping the current course |
 | `StudyLife: Start focus timer for a course` | Asks which course first |
+| `StudyLife: Choose the focus mode` | Picks the preset for the next session |
 | `StudyLife: Pause focus timer` | Pauses it |
 | `StudyLife: Stop focus timer` | Stops it |
 | `StudyLife: Log tracked coding time as a session` | Offers the stretch tracked so far |

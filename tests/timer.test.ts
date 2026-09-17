@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   type TimerState,
+  canChangeMode,
   durationMinutes,
   formatCountdown,
+  modeChoices,
   modeName,
   phaseOf,
   progress,
@@ -161,5 +163,43 @@ describe("resuming after a pause", () => {
     expect(
       Date.parse(transition(paused, "start", { now: NOW, resumeMs: 0 }).phaseEndsAt as string) - NOW,
     ).toBe(25 * MIN);
+  });
+});
+
+describe("mode selection", () => {
+  it("offers the nine built-in presets with their lengths", () => {
+    const choices = modeChoices(running());
+    expect(choices).toHaveLength(9);
+    expect(choices.find((c) => c.id === 1)).toMatchObject({
+      name: "Pomodoro Classic",
+      detail: "25 min focus / 5 min break",
+      current: true,
+    });
+    expect(choices.find((c) => c.id === 2)?.detail).toBe("52 min focus / 17 min break");
+  });
+
+  it("marks nothing as current for a custom mode instead of guessing", () => {
+    // Custom modes live in the user's settings, which this extension cannot read.
+    expect(modeChoices(running({ timerModeId: 100 })).some((c) => c.current)).toBe(false);
+  });
+
+  it("allows a change only while stopped", () => {
+    expect(canChangeMode(undefined)).toBe(true);
+    expect(canChangeMode({ isRunning: false })).toBe(true);
+    // Switching mid-phase would leave the countdown measured against a length that no longer
+    // applies.
+    expect(canChangeMode(running())).toBe(false);
+  });
+
+  it("applies a chosen mode on start", () => {
+    expect(transition(undefined, "start", { now: NOW, modeId: 3 }).timerModeId).toBe(3);
+    // 90 min focus for Ultradian Rhythm, not the 25 of the default.
+    expect(
+      Date.parse(transition(undefined, "start", { now: NOW, modeId: 3 }).phaseEndsAt as string) - NOW,
+    ).toBe(90 * MIN);
+  });
+
+  it("keeps the existing mode when none is chosen", () => {
+    expect(transition(running({ timerModeId: 7 }), "pause", { now: NOW }).timerModeId).toBe(7);
   });
 });
