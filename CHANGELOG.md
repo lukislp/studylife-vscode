@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/lukislp/studylife-vscode/compare/v1.4.0...v1.4.1) (2026-09-17)
+
+
+### Bug Fixes
+
+* **deps:** bump @types/node in the dev group across 1 directory ([#3](https://github.com/lukislp/studylife-vscode/issues/3)) ([7405de1](https://github.com/lukislp/studylife-vscode/commit/7405de191191fbeea77483df4588eb85383fbde6))
+
 # [1.4.0](https://github.com/lukislp/studylife-vscode/compare/v1.3.2...v1.4.0) (2026-09-17)
 
 
