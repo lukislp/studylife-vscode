@@ -32,6 +32,17 @@ const MODE_KEY = "studylife.timerMode";
  *  as the default for a logged stretch; starting the timer sends no mode at all and lets the
  *  server keep whatever the user last chose. */
 const DEFAULT_TIMER_MODE_ID = 2;
+/** Floor for the poll interval. Mirrors configuration.properties["studylife.pollSeconds"].minimum
+ *  in package.json - VS Code's settings schema only validates the Settings UI and settings.json
+ *  editing, not a value read back via config.get(), so this clamp is the actual enforcement. Keep
+ *  both in sync by hand if either changes. */
+const MIN_POLL_SECONDS = 10;
+/** Consecutive failed polls before a non-403 failure is worth a popup. One blip (a dropped wifi
+ *  packet, a deploy restart) is not - the next tick usually recovers on its own. A sustained
+ *  outage (wrong instanceUrl, DNS failure, the server being down) otherwise never surfaces
+ *  anything beyond the status bar quietly going blank, which reads as "broken" rather than
+ *  "reconnecting". */
+const FAILURE_NOTIFY_THRESHOLD = 2;
 
 let api: StudyLifeApi | undefined;
 let statusBar: StatusBar;
@@ -45,6 +56,10 @@ let lastTimerState: TimerState | undefined;
 /** Kept from the last poll so the course picker can offer the active courses without
  *  a second request while the user is waiting on the quick pick. */
 let lastMetrics: MetricsSummary | undefined;
+/** Tracks an in-progress outage so the non-403 warning below fires once per outage, not once per
+ *  poll. Reset on the next successful refresh. */
+let consecutivePollFailures = 0;
+let notifiedThisOutage = false;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   statusBar = new StatusBar();
@@ -99,7 +114,7 @@ async function reconfigure(context: vscode.ExtensionContext): Promise<void> {
   api = instanceUrl && apiKey ? new StudyLifeApi(instanceUrl, apiKey) : undefined;
 
   if (pollTimer) clearInterval(pollTimer);
-  const seconds = Math.max(10, config.get<number>("pollSeconds", 30));
+  const seconds = Math.max(MIN_POLL_SECONDS, config.get<number>("pollSeconds", 30));
   pollTimer = setInterval(() => void refresh(), seconds * 1000);
   await refresh();
 }
@@ -122,6 +137,8 @@ async function refresh(): Promise<void> {
     ]);
     lastTimerState = timerState;
     lastMetrics = metrics;
+    consecutivePollFailures = 0;
+    notifiedThisOutage = false;
     const snapshot = {
       connected: true,
       timer: timerState,
@@ -133,10 +150,17 @@ async function refresh(): Promise<void> {
     statusBar.render(snapshot);
     panel.update({ ...snapshot, courseName: workspaceCourseName });
   } catch (error) {
-    // A failed poll is not worth a modal - the status bar going quiet is signal enough, and the
-    // next tick may well succeed. A scope problem is the exception: it never fixes itself.
+    // A single failed poll is not worth a modal - the status bar going quiet is signal enough,
+    // and the next tick may well succeed. A scope problem is the exception: it never fixes
+    // itself, so it is always worth saying. Everything else only gets a message once it looks
+    // like a real outage rather than a blip - see FAILURE_NOTIFY_THRESHOLD.
+    consecutivePollFailures += 1;
     if (error instanceof ApiError && error.status === 403) {
       void vscode.window.showErrorMessage(`StudyLife: ${error.message}`);
+    } else if (consecutivePollFailures >= FAILURE_NOTIFY_THRESHOLD && !notifiedThisOutage) {
+      notifiedThisOutage = true;
+      const message = error instanceof Error ? error.message : String(error);
+      void vscode.window.showWarningMessage(`StudyLife: can't reach the server - ${message}`);
     }
     const now = Date.now();
     statusBar.render({ connected: true, now });
@@ -371,7 +395,8 @@ async function pickCourse(title: string): Promise<number | undefined> {
       [
         ...active.map((g) => ({
           label: g.courseName,
-          description: g.daysLeft < 0 ? `${Math.abs(g.daysLeft)} days overdue` : `in ${g.daysLeft} days`,
+          description:
+            g.daysLeft < 0 ? `${Math.abs(g.daysLeft)} days overdue` : `in ${g.daysLeft} days`,
           id: g.courseId,
         })),
         { label: "$(list-unordered) All courses…", description: "", id: SHOW_ALL },
@@ -404,9 +429,7 @@ async function pickFromFullCatalogue(title: string): Promise<number | undefined>
   return picked?.id;
 }
 
-async function pickWorkspaceCourse(
-  context: vscode.ExtensionContext,
-): Promise<number | undefined> {
+async function pickWorkspaceCourse(context: vscode.ExtensionContext): Promise<number | undefined> {
   const id = await pickCourse(`Course for ${vscode.workspace.name ?? "this workspace"}`);
   if (id === undefined) return undefined;
   await context.globalState.update(workspaceKey(), id);

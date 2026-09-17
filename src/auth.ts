@@ -46,8 +46,10 @@ interface Listener {
   close(): void;
 }
 
-/** Binds the first free candidate port. See CANDIDATE_PORTS for why the list is fixed. */
-async function bindFirstFreePort(): Promise<Listener> {
+/** Binds the first free candidate port. See CANDIDATE_PORTS for why the list is fixed. Exported
+ *  for the port-fallback tests - runLogin() cannot exercise it directly since the callback state
+ *  it generates internally never leaves the function. */
+export async function bindFirstFreePort(): Promise<Listener> {
   for (const port of CANDIDATE_PORTS) {
     const listener = await tryBind(port);
     if (listener) return listener;
@@ -58,7 +60,7 @@ async function bindFirstFreePort(): Promise<Listener> {
   );
 }
 
-function tryBind(port: number): Promise<Listener | undefined> {
+export function tryBind(port: number): Promise<Listener | undefined> {
   return new Promise((resolve) => {
     let settle: ((result: CallbackResult) => void) | undefined;
     const received = new Promise<CallbackResult>((r) => (settle = r));
@@ -68,7 +70,7 @@ function tryBind(port: number): Promise<Listener | undefined> {
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       res.end(
         "<!doctype html><meta charset=utf-8><title>StudyLife</title>" +
-          "<body style=\"font-family:system-ui;padding:3rem;text-align:center\">" +
+          '<body style="font-family:system-ui;padding:3rem;text-align:center">' +
           "<h1>Connected</h1><p>You can close this tab and go back to your editor.</p>",
       );
       settle?.(params);
@@ -124,7 +126,9 @@ export async function runLogin(
       );
     }
     if (!result.assertion) {
-      throw new LoginError("StudyLife's callback carried no assertion - the connection was denied.");
+      throw new LoginError(
+        "StudyLife's callback carried no assertion - the connection was denied.",
+      );
     }
     return await exchangeAssertion(baseUrl, clientId, result.assertion, verifier);
   } finally {
@@ -133,8 +137,9 @@ export async function runLogin(
 }
 
 /** Server-to-server redemption of the assertion. Deliberately sends no X-Api-Key: the endpoint is
- *  anonymous by design, the assertion itself is the one-time credential. */
-async function exchangeAssertion(
+ *  anonymous by design, the assertion itself is the one-time credential. Exported so its error
+ *  branches are directly testable without driving a whole runLogin() round trip. */
+export async function exchangeAssertion(
   baseUrl: string,
   clientId: string,
   assertion: string,

@@ -6,7 +6,6 @@ import { trimBase } from "./oauth.js";
 export type { TimerState } from "./timer.js";
 import type { TimerState } from "./timer.js";
 
-
 export interface Course {
   id: number;
   name: string;
@@ -57,6 +56,26 @@ export class ApiError extends Error {
   }
 }
 
+/** A hung request would otherwise block the poll loop indefinitely - the extension has no way to
+ *  cancel a request it started 30 seconds ago, so it would just pile up behind this one. */
+const REQUEST_TIMEOUT_MS = 15_000;
+/** One retry, after a short pause, for failures that are plausibly transient (a dropped
+ *  connection, our own timeout, a 502 during a deploy, a 429). Everything else - including every
+ *  other 4xx - is reported immediately: retrying a wrong API key or a 404 never turns it into a
+ *  success. */
+const RETRY_DELAY_MS = 500;
+
+function isRetryable(error: unknown): boolean {
+  if (error instanceof ApiError) return error.status === 429 || error.status >= 500;
+  // Anything else thrown by attempt() below is a network-level failure (DNS, TLS, connection
+  // reset) or the timeout wrapped below - neither has a response to inspect.
+  return true;
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export class StudyLifeApi {
   constructor(
     private readonly baseUrl: string,
@@ -65,14 +84,39 @@ export class StudyLifeApi {
   ) {}
 
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
-    const response = await this.fetchImpl(`${trimBase(this.baseUrl)}${path}`, {
-      ...init,
-      headers: {
-        "X-Api-Key": this.apiKey,
-        "Content-Type": "application/json",
-        ...(init?.headers ?? {}),
-      },
-    });
+    try {
+      return await this.attempt<T>(path, init);
+    } catch (error) {
+      if (!isRetryable(error)) throw error;
+      await delay(RETRY_DELAY_MS);
+      return this.attempt<T>(path, init);
+    }
+  }
+
+  private async attempt<T>(path: string, init?: RequestInit): Promise<T> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    let response: Response;
+    try {
+      response = await this.fetchImpl(`${trimBase(this.baseUrl)}${path}`, {
+        ...init,
+        signal: controller.signal,
+        headers: {
+          "X-Api-Key": this.apiKey,
+          "Content-Type": "application/json",
+          ...(init?.headers ?? {}),
+        },
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new Error(
+          `${init?.method ?? "GET"} ${path} timed out after ${REQUEST_TIMEOUT_MS / 1000}s`,
+        );
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
     if (!response.ok) {
       // 403 is the one worth naming: it means the key authenticated but the endpoint is outside
       // the scopes this installation was granted, which no amount of retrying fixes.
@@ -80,7 +124,10 @@ export class StudyLifeApi {
         response.status === 403
           ? " - this installation was not granted that permission; reconnect and approve it"
           : "";
-      throw new ApiError(`${init?.method ?? "GET"} ${path} failed (${response.status})${hint}`, response.status);
+      throw new ApiError(
+        `${init?.method ?? "GET"} ${path} failed (${response.status})${hint}`,
+        response.status,
+      );
     }
     if (response.status === 204) return undefined as T;
     return (await response.json()) as T;
@@ -129,7 +176,6 @@ export class StudyLifeApi {
     });
   }
 }
-
 
 /** Split out from the client so the date arithmetic is testable without a server. */
 export function sumHoursOn(sessions: SessionRecord[], now: number): number {

@@ -132,6 +132,7 @@ and sessions you explicitly confirm. File contents and file names are never sent
 ```bash
 npm install
 npm run typecheck
+npm run format:check   # or `npm run format` to fix
 npm test
 npm run build      # bundle into dist/
 npm run package    # produce the .vsix
@@ -141,10 +142,13 @@ npm run package    # produce the .vsix
 produces an extension that fails to activate.
 
 The modules without editor dependencies (`oauth.ts`, `activity.ts`, `timer.ts`, `panelModel.ts`,
-the render functions in `statusBar.ts`) hold the rules that are easy to get subtly wrong, and
-those are what the tests cover — PKCE shape, constant-time state comparison, callback parsing, the
-stretch/idle arithmetic, the timer transitions, and everything the panel displays. `panel.ts`
-keeps the vscode-facing half separate precisely so `panelModel.ts` can be tested without an editor.
+`html.ts`, the render functions in `statusBar.ts`) hold the rules that are easy to get subtly
+wrong, and those are what the tests cover — PKCE shape, constant-time state comparison, callback
+parsing, the stretch/idle arithmetic, the timer transitions, the panel's HTML-escaping, and
+everything the panel displays. `panel.ts` keeps the vscode-facing half separate precisely so
+`panelModel.ts` can be tested without an editor; `auth.ts` and its loopback server are tested
+against a small `vscode` stand-in aliased in `vitest.config.mts` instead, since only the socket
+and secret-storage plumbing needs the real editor.
 
 `timer.ts` and `runLog.ts` are worth reading before changing anything about the timer. The wire
 shape has neither a "paused" flag nor a course, and the server accepts unknown JSON properties

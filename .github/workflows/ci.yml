@@ -20,6 +20,14 @@ permissions:
   contents: read
 
 jobs:
+  # Named "lint" for the required-status-check context in the main ruleset (rules/branches/main),
+  # not because it runs a linter: it actually runs type checking, formatting and a dependency
+  # audit. There is deliberately no ESLint step - typescript-eslint refuses to run at all against
+  # TypeScript 7, which this repo has used since 1.4.0
+  # (github.com/typescript-eslint/typescript-eslint/issues/10940 tracks their TS 7 support).
+  # Re-add it once that lands and rename this job then, updating the ruleset's required context to
+  # match in the same PR; until then this stage's own strictness (tsconfig's
+  # noUncheckedIndexedAccess/exactOptionalPropertyTypes etc.) and Prettier are the gate.
   lint:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -34,6 +42,7 @@ jobs:
       # `npm ci` actually fails.
       - run: npm ci || (npm cache clean --force && npm ci)
       - run: npm run typecheck
+      - run: npm run format:check
       - run: npm audit --audit-level=high
 
   build:

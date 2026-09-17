@@ -12,6 +12,7 @@
   "bugs": {
     "url": "https://github.com/lukislp/studylife-vscode/issues"
   },
+  "icon": "media/studylife-icon.png",
   "engines": {
     "vscode": "^1.90.0",
     "node": ">=24"
@@ -147,13 +148,16 @@
     "build": "node build.mjs",
     "watch": "node build.mjs --watch",
     "typecheck": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" \"*.{mjs,mts}\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\" \"*.{mjs,mts}\"",
     "test": "vitest run",
     "package": "npx --yes @vscode/vsce package --no-dependencies --out studylife-vscode.vsix"
   },
   "devDependencies": {
     "@types/node": "^26.5.1",
-    "@types/vscode": "^1.90.0",
+    "@types/vscode": "1.90.0",
     "esbuild": "^0.28.0",
+    "prettier": "^3.0.0",
     "typescript": "^7.0.2",
     "vitest": "^5.0.0"
   }
