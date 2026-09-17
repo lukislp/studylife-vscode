@@ -4,6 +4,7 @@
 // Everything is styled from VS Code's own theme variables, so it follows whatever theme the user
 // runs without a palette of its own. What to show lives in panelModel.ts.
 import * as vscode from "vscode";
+import { escapeHtml as escape } from "./html.js";
 import { type PanelModel, type Snapshot, buildPanel } from "./panelModel.js";
 
 export class StudyLifePanel implements vscode.WebviewViewProvider {
@@ -25,7 +26,8 @@ export class StudyLifePanel implements vscode.WebviewViewProvider {
       localResourceRoots: [this.extensionUri],
     };
     view.webview.onDidReceiveMessage((message: { command?: string }) => {
-      if (typeof message?.command === "string") void vscode.commands.executeCommand(message.command);
+      if (typeof message?.command === "string")
+        void vscode.commands.executeCommand(message.command);
     });
 
     // The countdown has to move on its own - the poll loop runs every 30 seconds, which would
@@ -66,15 +68,6 @@ function nonce(): string {
       Math.floor(Math.random() * 62),
     ),
   ).join("");
-}
-
-/** Everything user-supplied passes through here: a course named `<b>` must not become markup. */
-function escape(text: string): string {
-  return text.replace(
-    /[&<>"']/g,
-    (c) =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c,
-  );
 }
 
 function html(m: PanelModel, n: string): string {
@@ -217,9 +210,7 @@ function connected(m: PanelModel): string {
   const modePart = t.canChangeMode
     ? `<span class="pick" data-command="studylife.setTimerMode">${escape(modeLabel)}</span>`
     : escape(modeLabel);
-  const meta = [modePart, t.round ? escape(t.round) : ""]
-    .filter((x) => x.length > 0)
-    .join(" · ");
+  const meta = [modePart, t.round ? escape(t.round) : ""].filter((x) => x.length > 0).join(" · ");
 
   const actions = t.running
     ? `<button data-command="studylife.pauseTimer">Pause</button>

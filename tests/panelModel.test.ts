@@ -38,13 +38,22 @@ describe("timer card", () => {
 
   it("says Break during a break", () => {
     const t = buildPanel(
-      base({ timer: { isRunning: true, isBreak: true, timerModeId: 1, phaseEndsAt: new Date(NOW + MIN).toISOString() } }),
+      base({
+        timer: {
+          isRunning: true,
+          isBreak: true,
+          timerModeId: 1,
+          phaseEndsAt: new Date(NOW + MIN).toISOString(),
+        },
+      }),
     ).timer;
     expect(t.phase).toBe("Break");
   });
 
   it("omits the round when stopped - a round number without a session means nothing", () => {
-    expect(buildPanel(base({ timer: { isRunning: false, currentRound: 4 } })).timer.round).toBeUndefined();
+    expect(
+      buildPanel(base({ timer: { isRunning: false, currentRound: 4 } })).timer.round,
+    ).toBeUndefined();
   });
 });
 
@@ -61,7 +70,9 @@ describe("stats", () => {
   });
 
   it("shows a zero streak rather than hiding it - it is a fact, not a gap", () => {
-    expect(buildPanel(base({ metrics: { streak: { current: 0 } } })).stats[2]?.value).toBe("0 days");
+    expect(buildPanel(base({ metrics: { streak: { current: 0 } } })).stats[2]?.value).toBe(
+      "0 days",
+    );
   });
 });
 
@@ -118,7 +129,9 @@ describe("activeGoals", () => {
 
 describe("workspace", () => {
   it("counts the tracked stretch up to now, not to the last keystroke", () => {
-    const m = buildPanel(base({ tracked: { startedAt: NOW - 47 * MIN, lastActivityAt: NOW - 3 * MIN } }));
+    const m = buildPanel(
+      base({ tracked: { startedAt: NOW - 47 * MIN, lastActivityAt: NOW - 3 * MIN } }),
+    );
     expect(m.tracked).toBe("47 min");
   });
 

@@ -137,7 +137,9 @@ describe("transitions", () => {
   });
 
   it("always sends clientNow so the server can translate the deadline for other devices", () => {
-    expect(transition(undefined, "start", { now: NOW }).clientNow).toBe(new Date(NOW).toISOString());
+    expect(transition(undefined, "start", { now: NOW }).clientNow).toBe(
+      new Date(NOW).toISOString(),
+    );
   });
 });
 
@@ -159,9 +161,12 @@ describe("resuming after a pause", () => {
 
   it("falls back to a full phase when the remainder is absent or used up", () => {
     const paused = transition(running(), "pause", { now: NOW });
-    expect(Date.parse(transition(paused, "start", { now: NOW }).phaseEndsAt as string) - NOW).toBe(25 * MIN);
+    expect(Date.parse(transition(paused, "start", { now: NOW }).phaseEndsAt as string) - NOW).toBe(
+      25 * MIN,
+    );
     expect(
-      Date.parse(transition(paused, "start", { now: NOW, resumeMs: 0 }).phaseEndsAt as string) - NOW,
+      Date.parse(transition(paused, "start", { now: NOW, resumeMs: 0 }).phaseEndsAt as string) -
+        NOW,
     ).toBe(25 * MIN);
   });
 });
@@ -195,7 +200,8 @@ describe("mode selection", () => {
     expect(transition(undefined, "start", { now: NOW, modeId: 3 }).timerModeId).toBe(3);
     // 90 min focus for Ultradian Rhythm, not the 25 of the default.
     expect(
-      Date.parse(transition(undefined, "start", { now: NOW, modeId: 3 }).phaseEndsAt as string) - NOW,
+      Date.parse(transition(undefined, "start", { now: NOW, modeId: 3 }).phaseEndsAt as string) -
+        NOW,
     ).toBe(90 * MIN);
   });
 

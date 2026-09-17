@@ -3,6 +3,9 @@ src/**
 tests/**
 node_modules/**
 build.mjs
+vitest.config.mts
 tsconfig.json
 .gitignore
+.prettierrc.json
+.prettierignore
 *.vsix

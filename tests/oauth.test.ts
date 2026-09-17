@@ -51,7 +51,13 @@ describe("state comparison", () => {
 describe("connect URL", () => {
   it("carries the four query parameters the server expects", () => {
     const url = new URL(
-      buildConnectUrl("https://studylife.example.com", "studylife-vscode", "http://127.0.0.1:8775/callback", "st4te", "ch4llenge"),
+      buildConnectUrl(
+        "https://studylife.example.com",
+        "studylife-vscode",
+        "http://127.0.0.1:8775/callback",
+        "st4te",
+        "ch4llenge",
+      ),
     );
     expect(url.pathname).toBe("/connect/client/studylife-vscode");
     expect(url.searchParams.get("redirect_uri")).toBe("http://127.0.0.1:8775/callback");
@@ -61,7 +67,13 @@ describe("connect URL", () => {
   });
 
   it("does not produce a double slash when the instance URL has a trailing one", () => {
-    const url = buildConnectUrl("https://studylife.example.com/", "c", "http://127.0.0.1:8775/callback", "s", "c");
+    const url = buildConnectUrl(
+      "https://studylife.example.com/",
+      "c",
+      "http://127.0.0.1:8775/callback",
+      "s",
+      "c",
+    );
     expect(url).not.toContain(".com//");
   });
 });

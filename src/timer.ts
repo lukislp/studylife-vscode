@@ -163,7 +163,8 @@ export function transition(
 
   // start: resume the live phase, then a remembered pause, and only then a full phase.
   const live = remainingMs(current, options.now);
-  const resume = options.resumeMs !== undefined && options.resumeMs > 0 ? options.resumeMs : undefined;
+  const resume =
+    options.resumeMs !== undefined && options.resumeMs > 0 ? options.resumeMs : undefined;
   const minutes = durationMinutes(base);
   const durationMs = live && live > 0 ? live : (resume ?? (minutes ?? 25) * 60_000);
   return {
