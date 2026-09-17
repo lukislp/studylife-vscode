@@ -1,3 +1,10 @@
+## [1.4.2](https://github.com/lukislp/studylife-vscode/compare/v1.4.1...v1.4.2) (2026-09-17)
+
+
+### Bug Fixes
+
+* harden API client, close test gaps, and add lint/format tooling ([#16](https://github.com/lukislp/studylife-vscode/issues/16)) ([dfed908](https://github.com/lukislp/studylife-vscode/commit/dfed908911493d2ffd441331167046abbbb84961)), closes [typescript-eslint/typescript-eslint#10940](https://github.com/typescript-eslint/typescript-eslint/issues/10940)
+
 ## [1.4.1](https://github.com/lukislp/studylife-vscode/compare/v1.4.0...v1.4.1) (2026-09-17)
 
 
