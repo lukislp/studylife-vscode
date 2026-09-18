@@ -131,6 +131,13 @@ jobs:
       # Keyless signing + build provenance for the release assets (see the last steps).
       id-token: write
       attestations: write
+    env:
+      # VSCE_PAT is a classic Azure DevOps PAT (Marketplace: Manage scope), created at
+      # dev.azure.com and set as a repo secret - not required for this workflow to succeed, so a
+      # release still completes normally (GitHub Release + signing) before this secret exists.
+      # Azure DevOps retires classic PATs on 2026-12-01; migrate to `vsce publish
+      # --azure-credential` (Entra ID workload identity federation) before then.
+      HAS_VSCE_PAT: ${{ secrets.VSCE_PAT != '' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -183,6 +190,14 @@ jobs:
           gh release upload "$TAG" studylife-vscode.vsix --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish to the VS Code Marketplace
+        if: (steps.semrel.outcome == 'success' || steps.semrel_retry.outcome == 'success') && env.HAS_VSCE_PAT == 'true'
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: npx --yes @vscode/vsce publish --packagePath studylife-vscode.vsix -p "$VSCE_PAT"
+      - name: VSCE_PAT not set - skipping Marketplace publish
+        if: (steps.semrel.outcome == 'success' || steps.semrel_retry.outcome == 'success') && env.HAS_VSCE_PAT != 'true'
+        run: echo "VSCE_PAT is not set - this release was published to GitHub only, not the VS Code Marketplace." | tee -a "$GITHUB_STEP_SUMMARY"
       # Signed release assets (OpenSSF Scorecard "Signed-Releases"): a keyless Sigstore
       # signature bundle per asset plus one GitHub build-provenance attestation, uploaded next
       # to the assets so a download can be verified offline:
