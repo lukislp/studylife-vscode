@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/lukislp/studylife-vscode/compare/v1.4.5...v1.5.0) (2026-09-18)
+
+
+### Features
+
+* show the full course name as a tooltip on truncated goal/session rows ([#20](https://github.com/lukislp/studylife-vscode/issues/20)) ([5b32120](https://github.com/lukislp/studylife-vscode/commit/5b32120ab009d232af7ca0bfa139f38e4d80b55d))
+
 ## [1.4.5](https://github.com/lukislp/studylife-vscode/compare/v1.4.4...v1.4.5) (2026-09-18)
 
 
