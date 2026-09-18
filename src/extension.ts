@@ -154,7 +154,13 @@ function pausedRemainingMs(timerState: TimerState | undefined): number | undefin
  */
 function renderTimerImmediately(state: TimerState, now: number): void {
   const pausedMs = pausedRemainingMs(state);
-  const snapshot = { connected: true, timer: state, metrics: lastMetrics, tracked: tracker.peek(), now };
+  const snapshot = {
+    connected: true,
+    timer: state,
+    metrics: lastMetrics,
+    tracked: tracker.peek(),
+    now,
+  };
   statusBar.render({ ...snapshot, pausedLocally: pausedMs !== undefined });
   panel.update({
     ...snapshot,
