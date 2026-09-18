@@ -224,7 +224,7 @@ function connected(m: PanelModel): string {
     ? m.goals
         .map(
           (g) =>
-            `<div class="row goal"><span class="k">${escape(g.name)}</span><span class="v${g.overdue ? " overdue" : ""}">${escape(g.due)}</span></div>`,
+            `<div class="row goal"><span class="k" title="${escape(g.name)}">${escape(g.name)}</span><span class="v${g.overdue ? " overdue" : ""}">${escape(g.due)}</span></div>`,
         )
         .join("")
     : `<div class="empty">No open course goals.</div>`;
@@ -236,7 +236,7 @@ function connected(m: PanelModel): string {
     ? m.upcomingSessions
         .map(
           (s) =>
-            `<div class="row goal"><span class="k">${escape(s.courseName)}</span><span class="v">${escape(s.when)}</span></div>`,
+            `<div class="row goal"><span class="k" title="${escape(s.courseName)}">${escape(s.courseName)}</span><span class="v">${escape(s.when)}</span></div>`,
         )
         .join("")
     : `<div class="empty">No upcoming sessions.</div>`;
