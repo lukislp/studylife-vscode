@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/lukislp/studylife-vscode/compare/v1.5.1...v1.6.0) (2026-09-18)
+
+
+### Features
+
+* publish releases to the VS Code Marketplace automatically ([#22](https://github.com/lukislp/studylife-vscode/issues/22)) ([3fd1167](https://github.com/lukislp/studylife-vscode/commit/3fd116711f1e8aa40c3600508c0e9dc7f2f8f0cb))
+
 ## [1.5.1](https://github.com/lukislp/studylife-vscode/compare/v1.5.0...v1.5.1) (2026-09-18)
 
 
