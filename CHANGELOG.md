@@ -1,3 +1,10 @@
+## [1.4.4](https://github.com/lukislp/studylife-vscode/compare/v1.4.3...v1.4.4) (2026-09-18)
+
+
+### Bug Fixes
+
+* use the official StudyLife logo for the Activity Bar icon too ([#18](https://github.com/lukislp/studylife-vscode/issues/18)) ([4d595f7](https://github.com/lukislp/studylife-vscode/commit/4d595f7a5ffe74810c526b1e66760f4735290fe8))
+
 ## [1.4.3](https://github.com/lukislp/studylife-vscode/compare/v1.4.2...v1.4.3) (2026-09-18)
 
 
