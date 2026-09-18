@@ -1,3 +1,10 @@
+## [1.4.5](https://github.com/lukislp/studylife-vscode/compare/v1.4.4...v1.4.5) (2026-09-18)
+
+
+### Bug Fixes
+
+* stop the paused timer from being repainted as running mid-race ([#19](https://github.com/lukislp/studylife-vscode/issues/19)) ([c5fa926](https://github.com/lukislp/studylife-vscode/commit/c5fa9266173aeda262815b03a46ef90ee1ee3e16))
+
 ## [1.4.4](https://github.com/lukislp/studylife-vscode/compare/v1.4.3...v1.4.4) (2026-09-18)
 
 
