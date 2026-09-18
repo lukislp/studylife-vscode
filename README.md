@@ -1,6 +1,6 @@
 # StudyLife for VS Code
 
-[![CI](https://github.com/lukislp/studylife-vscode/actions/workflows/ci.yml/badge.svg)](https://github.com/lukislp/studylife-vscode/actions/workflows/ci.yml) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/lukislp/studylife-vscode/badge)](https://scorecard.dev/viewer/?uri=github.com/lukislp/studylife-vscode) [![CodeQL](https://github.com/lukislp/studylife-vscode/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/lukislp/studylife-vscode/security/code-scanning)
+[![CI](https://github.com/lukislp/studylife-vscode/actions/workflows/ci.yml/badge.svg)](https://github.com/lukislp/studylife-vscode/actions/workflows/ci.yml) [![OpenSSF Scorecard](https://img.shields.io/ossf-scorecard/github.com/lukislp/studylife-vscode?label=openssf+scorecard&style=flat)](https://scorecard.dev/viewer/?uri=github.com/lukislp/studylife-vscode) [![CodeQL](https://github.com/lukislp/studylife-vscode/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/lukislp/studylife-vscode/security/code-scanning)
 [![Release](https://img.shields.io/github/v/release/lukislp/studylife-vscode)](https://github.com/lukislp/studylife-vscode/releases)
 [![License: AGPL-3.0](https://img.shields.io/github/license/lukislp/studylife-vscode)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6)](https://www.typescriptlang.org/)
@@ -24,6 +24,12 @@ workspace's course and tracked time.
 The progress bar is only ever determinate when the length is actually known. Custom timer modes
 live in your StudyLife settings, which this extension has no scope to read, so for those the bar
 sweeps instead of claiming a fraction it cannot compute.
+
+A paused session reads **Paused**, with the remaining time frozen where you left it — not
+**Stopped**. StudyLife's server has no paused state of its own (pausing and stopping both just
+turn the timer off), so this extension remembers the pause itself for as long as this window is
+open, and shows it as its own state instead of rendering it identically to a real stop. The status
+bar's tooltip makes the same distinction.
 
 Starting from the panel asks **which course** the session is for, and offers only the courses you
 are currently working towards — those with an open course goal. StudyLife has no "active" flag on

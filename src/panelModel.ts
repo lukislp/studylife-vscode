@@ -23,11 +23,18 @@ export interface Snapshot {
   courseName?: string | undefined;
   /** Summed from the session history - the metrics API carries no daily figure. */
   todayHours?: number | undefined;
+  /**
+   * Milliseconds left in the phase when *this window* paused it (extension.ts's RESUME_KEY),
+   * or undefined when nothing is paused locally. The wire shape has no paused flag - a paused
+   * timer and a stopped one both read back `isRunning: false` - so this is the only way to tell
+   * them apart, and only for the window that set it. Ignored while `timer` is actually running.
+   */
+  pausedRemainingMs?: number | undefined;
   now: number;
 }
 
 export interface TimerCard {
-  /** "Focus", "Break" or "Stopped" - the headline state. */
+  /** "Focus", "Break", "Paused" or "Stopped" - the headline state. */
   phase: string;
   /** "24:13", or undefined when nothing is running. */
   countdown?: string | undefined;
@@ -37,6 +44,9 @@ export interface TimerCard {
   mode?: string | undefined;
   round?: string | undefined;
   running: boolean;
+  /** True when `phase` is "Paused" - split out as its own boolean so callers do not need to
+   *  compare against the display string to tell a resumable pause from a real stop. */
+  paused: boolean;
   /** Whether the preset may be changed right now - not while a phase is counting down against
    *  the current length. */
   canChangeMode: boolean;
@@ -82,12 +92,24 @@ export function buildPanel(s: Snapshot): PanelModel {
 
 function timerCard(s: Snapshot): TimerCard {
   const phase = phaseOf(s.timer);
-  const remaining = remainingMs(s.timer, s.now);
+  // A pause is a client-side illusion: the server has already gone back to isRunning: false,
+  // indistinguishable from a real stop (see phaseOf's doc comment). s.pausedRemainingMs is the
+  // one piece of local memory that says otherwise - and, for as long as it is set, the frozen
+  // countdown to show instead of the running one remainingMs would otherwise no longer supply.
+  const paused = phase === "stopped" && s.pausedRemainingMs !== undefined;
+  const remaining = paused ? s.pausedRemainingMs : remainingMs(s.timer, s.now);
   const fraction = progress(s.timer, s.now);
   const round = s.timer?.currentRound;
   return {
-    phase: phase === "stopped" ? "Stopped" : phase === "break" ? "Break" : "Focus",
+    phase: paused
+      ? "Paused"
+      : phase === "stopped"
+        ? "Stopped"
+        : phase === "break"
+          ? "Break"
+          : "Focus",
     running: phase !== "stopped",
+    paused,
     canChangeMode: canChangeMode(s.timer),
     ...(remaining === undefined ? {} : { countdown: formatCountdown(remaining) }),
     ...(fraction === undefined ? {} : { progress: fraction }),
