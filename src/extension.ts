@@ -14,8 +14,9 @@ import { LoginError, clearApiKey, readApiKey, runLogin, storeApiKey } from "./au
 import { StatusBar } from "./statusBar.js";
 import { StudyLifePanel } from "./panel.js";
 import { activeGoals } from "./panelModel.js";
+import { LatestWins } from "./sequencer.js";
 import { canChangeMode, modeChoices, remainingMs, transition } from "./timer.js";
-import { type TimerRun, decide } from "./runLog.js";
+import { type TimerRun, decide, placeholderCourseName } from "./runLog.js";
 
 const COURSE_KEY_PREFIX = "studylife.course.";
 /** The run this window started, kept in globalState so it survives a window reload -
@@ -56,6 +57,12 @@ let workspaceCourseName: string | undefined;
 let tracker: ActivityTracker;
 let pollTimer: NodeJS.Timeout | undefined;
 let lastTimerState: TimerState | undefined;
+/** Guards writes to lastTimerState (and the render calls derived from it) against the periodic
+ *  poll and a command's own save racing each other - see sequencer.ts's doc comment for exactly
+ *  the bug this prevents: a poll issued just before a Pause/Start/Stop click, but resolving just
+ *  after that click's own save, would otherwise overwrite the freshly saved state with the
+ *  stale one it already had in hand. */
+const timerStateSeq = new LatestWins();
 /** Kept from the last poll so the course picker can offer the active courses without
  *  a second request while the user is waiting on the quick pick. */
 let lastMetrics: MetricsSummary | undefined;
@@ -144,15 +151,23 @@ async function refresh(): Promise<void> {
     panel.update({ connected: false, now });
     return;
   }
+  // Reserved before any await, so a command that starts after this poll (e.g. the user clicking
+  // Pause) is guaranteed a higher ticket - see sequencer.ts. Whichever of this poll or that
+  // command's own save resolves last no longer matters; only the one issued last is allowed to
+  // apply its result below.
+  const ticket = timerStateSeq.start();
   try {
     const now = Date.now();
     // The daily figure is summed from the session history: MetricsHoursDto has week, month and
-    // total, but no today. A failure there must not blank the rest of the panel.
-    const [timerState, metrics, todayHours] = await Promise.all([
+    // total, but no today. Sessions.GetAll needs its own scope this installation may not have
+    // been granted. Neither failure must blank the rest of the panel.
+    const [timerState, metrics, todayHours, sessions] = await Promise.all([
       api.getTimerState(),
       api.getMetricsSummary(),
       api.getTodayHours(now).catch(() => undefined),
+      api.getAllSessions().catch(() => undefined),
     ]);
+    if (!timerStateSeq.isCurrent(ticket)) return; // superseded by a newer poll or command
     lastTimerState = timerState;
     lastMetrics = metrics;
     consecutivePollFailures = 0;
@@ -164,6 +179,7 @@ async function refresh(): Promise<void> {
       metrics,
       tracked: tracker.peek(),
       ...(todayHours === undefined ? {} : { todayHours }),
+      ...(sessions === undefined ? {} : { sessions }),
       now,
     };
     statusBar.render({ ...snapshot, pausedLocally: pausedMs !== undefined });
@@ -173,6 +189,7 @@ async function refresh(): Promise<void> {
       ...(pausedMs === undefined ? {} : { pausedRemainingMs: pausedMs }),
     });
   } catch (error) {
+    if (!timerStateSeq.isCurrent(ticket)) return; // superseded - do not render this stale outcome
     // A single failed poll is not worth a modal - the status bar going quiet is signal enough,
     // and the next tick may well succeed. A scope problem is the exception: it never fixes
     // itself, so it is always worth saying. Everything else only gets a message once it looks
@@ -239,6 +256,10 @@ async function controlTimer(
     void vscode.window.showWarningMessage("StudyLife: not connected yet.");
     return;
   }
+  // Reserved as early as possible - right at the click, before this action's own await gap
+  // opens - so a poll already in flight is guaranteed to have the smaller ticket and lose the
+  // race in timerStateSeq below, no matter which of the two network calls answers first.
+  const ticket = timerStateSeq.start();
   const base = lastTimerState ?? (await api.getTimerState());
   const now = Date.now();
   const resumeMs = context.globalState.get<number>(RESUME_KEY);
@@ -258,7 +279,12 @@ async function controlTimer(
       await context.globalState.update(RESUME_KEY, undefined);
     }
 
-    lastTimerState = await api.saveTimerState(next);
+    const saved = await api.saveTimerState(next);
+    // Only commit if nothing newer (another command, or a poll started after this click) has
+    // since taken over - see sequencer.ts. refresh() below issues its own, always-newer ticket
+    // and re-fetches the authoritative state regardless, so skipping this write when superseded
+    // never leaves the UI stuck on stale data.
+    if (timerStateSeq.isCurrent(ticket)) lastTimerState = saved;
 
     if (action === "start" && courseId !== undefined) {
       const run: TimerRun = {
@@ -314,6 +340,10 @@ async function bookRun(
   try {
     await api.createSession({
       courseId: decision.courseId,
+      // Required non-empty by the server even though it derives and overwrites the real name
+      // from courseId itself - see runLog.ts's placeholderCourseName for why this can never be
+      // left out.
+      courseName: placeholderCourseName(decision.courseId, run?.courseName),
       startTime: new Date(decision.startedAt).toISOString(),
       endTime: new Date(decision.endedAt).toISOString(),
       timerModeId: lastTimerState?.timerModeId ?? DEFAULT_TIMER_MODE_ID,
@@ -379,6 +409,7 @@ async function offerStretch(context: vscode.ExtensionContext, stretch: Stretch):
   try {
     await api.createSession({
       courseId,
+      courseName: placeholderCourseName(courseId, workspaceCourseName),
       startTime: new Date(stretch.startedAt).toISOString(),
       endTime: new Date(stretch.lastActivityAt).toISOString(),
       topic: workspace,

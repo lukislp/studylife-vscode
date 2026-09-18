@@ -84,8 +84,37 @@ describe("StudyLifeApi", () => {
     const fetchImpl = vi.fn(async () => new Response(null, { status: 204 }));
     const api = new StudyLifeApi("https://x", "k", fetchImpl as unknown as typeof fetch);
     await expect(
-      api.createSession({ courseId: 1, startTime: "a", endTime: "b", timerModeId: 1 }),
+      api.createSession({
+        courseId: 1,
+        courseName: "Algorithms",
+        startTime: "a",
+        endTime: "b",
+        timerModeId: 1,
+      }),
     ).resolves.toBeUndefined();
+  });
+
+  it("requests /api/sessions for getAllSessions - the Sessions.GetAll endpoint", async () => {
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify([]), { status: 200 }));
+    const api = new StudyLifeApi("https://x", "k", fetchImpl as unknown as typeof fetch);
+    await api.getAllSessions();
+    const [url] = fetchImpl.mock.calls[0] as unknown as [string];
+    expect(url).toBe("https://x/api/sessions");
+  });
+
+  it("sends courseName on createSession - the server rejects a missing/empty one with 400", async () => {
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify({}), { status: 200 }));
+    const api = new StudyLifeApi("https://x", "k", fetchImpl as unknown as typeof fetch);
+    await api.createSession({
+      courseId: 7,
+      courseName: "Betriebssysteme",
+      startTime: "a",
+      endTime: "b",
+      timerModeId: 1,
+    });
+    const [, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    const body = JSON.parse(init.body as string) as Record<string, unknown>;
+    expect(body.courseName).toBe("Betriebssysteme");
   });
 
   it("adds a scope hint to a 403 and does not retry it", async () => {

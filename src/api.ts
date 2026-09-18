@@ -37,8 +37,35 @@ export interface SessionRecord {
   [key: string]: unknown;
 }
 
+/**
+ * A row from GET /api/sessions (Sessions.GetAll) - every session ever created, past and future,
+ * with no day window and no pagination (unlike Sessions.GetHistory - see SessionsController's
+ * doc comment on GetAll in the studylife repo). startTime/endTime are naive Europe/Berlin local
+ * time, no offset in the JSON - see berlinTime.ts.
+ */
+export interface StudySession {
+  id: number;
+  courseId: number;
+  courseName: string;
+  courseColor?: string;
+  startTime: string;
+  endTime: string;
+  topic?: string;
+  notes?: string;
+  isCompleted: boolean;
+  [key: string]: unknown;
+}
+
 export interface NewSession {
   courseId: number;
+  /**
+   * Required non-empty by the server (StudySessionDto/SessionService.Validate) even though
+   * CreateAsync immediately re-resolves the real name from courseId and overwrites whatever is
+   * sent here - kept only "for backward compatibility". Never omit this: an empty/missing value
+   * fails validation with a 400 on every call, regardless of anything else in the request. See
+   * runLog.ts's placeholderCourseName for a safe value when nothing better is on hand.
+   */
+  courseName: string;
   startTime: string;
   endTime: string;
   topic?: string;
@@ -151,6 +178,12 @@ export class StudyLifeApi {
 
   getCourses(): Promise<Course[]> {
     return this.request<Course[]>("/api/courses");
+  }
+
+  /** Every session, past and future - see StudySession's doc comment. Requires Sessions.GetAll,
+   *  a separate scope from Sessions.GetHistory/Sessions.Create. */
+  getAllSessions(): Promise<StudySession[]> {
+    return this.request<StudySession[]>("/api/sessions");
   }
 
   getMetricsSummary(): Promise<MetricsSummary> {

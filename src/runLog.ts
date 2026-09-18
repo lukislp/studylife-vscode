@@ -50,3 +50,22 @@ export function decide(
   if (now - run.startedAt < MINIMUM_LOGGABLE_MS) return { log: false, reason: "too-short" };
   return { log: true, courseId: run.courseId, startedAt: run.startedAt, endedAt: now };
 }
+
+/**
+ * The CourseName to send on POST /api/sessions - required non-empty by the server
+ * (SessionService.Validate: "CourseName must not be empty.") even though CreateAsync
+ * immediately resolves the real name from courseId and overwrites whatever was sent, keeping
+ * the field only "for backward compatibility" (see StudySessionDto/SessionService.CreateAsync in
+ * the studylife repo). This extension's NewSession never carried a courseName at all before -
+ * every call to createSession() sent none, which the server bound to StudySessionDto's own
+ * default ("") and then rejected with 400, unconditionally, regardless of the timer's state.
+ *
+ * `known` is whatever name this extension already has on hand (the workspace's remembered
+ * course, or the one recorded when the run started) - used when available since it is the more
+ * meaningful value to have shown here before the audit-M2 change landed. When nothing is known,
+ * the courseId itself is a safe, always-non-empty fallback: the server ignores this field's
+ * content either way, so all that matters is that it is not blank.
+ */
+export function placeholderCourseName(courseId: number, known: string | undefined): string {
+  return known !== undefined && known.trim().length > 0 ? known : String(courseId);
+}

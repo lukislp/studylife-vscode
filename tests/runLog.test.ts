@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { MINIMUM_LOGGABLE_MS, type TimerRun, decide } from "../src/runLog.js";
+import {
+  MINIMUM_LOGGABLE_MS,
+  type TimerRun,
+  decide,
+  placeholderCourseName,
+} from "../src/runLog.js";
 
 const NOW = Date.parse("2026-09-16T12:00:00.000Z");
 const MIN = 60_000;
@@ -57,5 +62,30 @@ describe("decide", () => {
       log: false,
       reason: "planned",
     });
+  });
+});
+
+describe("placeholderCourseName", () => {
+  // The server rejects POST /api/sessions with 400 ("CourseName must not be empty.") whenever
+  // this comes back blank - it used to always be blank, because NewSession never carried the
+  // field at all, so every createSession() call failed unconditionally. The server ignores this
+  // value's actual content (it re-derives the real name from courseId and overwrites it), so
+  // correctness here means exactly one thing: never empty.
+  it("uses the known name when one is available", () => {
+    expect(placeholderCourseName(7, "Betriebssysteme")).toBe("Betriebssysteme");
+  });
+
+  it("falls back to the stringified courseId when nothing is known", () => {
+    expect(placeholderCourseName(42, undefined)).toBe("42");
+  });
+
+  it("falls back when the known name is empty or whitespace-only", () => {
+    expect(placeholderCourseName(42, "")).toBe("42");
+    expect(placeholderCourseName(42, "   ")).toBe("42");
+  });
+
+  it("never returns an empty string", () => {
+    expect(placeholderCourseName(1, undefined).length).toBeGreaterThan(0);
+    expect(placeholderCourseName(1, "").length).toBeGreaterThan(0);
   });
 });

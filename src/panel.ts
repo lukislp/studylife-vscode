@@ -229,6 +229,18 @@ function connected(m: PanelModel): string {
         .join("")
     : `<div class="empty">No open course goals.</div>`;
 
+  // A read-only glance list - no pagination, no editing here. Empty when nothing is fetched
+  // (missing Sessions.GetAll scope, or a failed poll) rather than showing a false "nothing
+  // planned" - see panelModel.upcomingSessions.
+  const upcoming = m.upcomingSessions.length
+    ? m.upcomingSessions
+        .map(
+          (s) =>
+            `<div class="row goal"><span class="k">${escape(s.courseName)}</span><span class="v">${escape(s.when)}</span></div>`,
+        )
+        .join("")
+    : `<div class="empty">No upcoming sessions.</div>`;
+
   return `<div class="card">
   <div class="phase"><span class="dot${t.running ? " live" : ""}"></span>${escape(t.phase)}</div>
   <div class="countdown">${escape(t.countdown ?? "--:--")}</div>
@@ -246,6 +258,11 @@ function connected(m: PanelModel): string {
 <section>
   <h2>Open goals</h2>
   ${goals}
+</section>
+
+<section>
+  <h2>Upcoming sessions</h2>
+  ${upcoming}
 </section>
 
 <section>
