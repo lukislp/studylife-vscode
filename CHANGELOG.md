@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/lukislp/studylife-vscode/compare/v1.5.0...v1.5.1) (2026-09-18)
+
+
+### Bug Fixes
+
+* render the countdown immediately after save, not after the slower refresh too ([#21](https://github.com/lukislp/studylife-vscode/issues/21)) ([94baee6](https://github.com/lukislp/studylife-vscode/commit/94baee6731fa2501a61a7217be2b1fb5df585c58))
+
 # [1.5.0](https://github.com/lukislp/studylife-vscode/compare/v1.4.5...v1.5.0) (2026-09-18)
 
 
