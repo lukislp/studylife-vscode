@@ -1,6 +1,7 @@
 .github/**
 src/**
 tests/**
+scripts/**
 node_modules/**
 build.mjs
 vitest.config.mts

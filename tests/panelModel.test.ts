@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { UpcomingGoal } from "../src/api.js";
-import { type Snapshot, activeGoals, buildPanel } from "../src/panelModel.js";
+import type { StudySession, UpcomingGoal } from "../src/api.js";
+import { type Snapshot, activeGoals, buildPanel, upcomingSessions } from "../src/panelModel.js";
 
 const NOW = Date.parse("2026-09-16T12:00:00.000Z");
 const MIN = 60_000;
@@ -175,6 +175,85 @@ describe("activeGoals", () => {
       { courseName: "Broken", targetDate: "", daysLeft: 1 } as unknown as UpcomingGoal,
     ];
     expect(activeGoals({ upcomingCourseGoals: goals })).toHaveLength(1);
+  });
+});
+
+describe("upcomingSessions", () => {
+  // NOW is 2026-09-16T12:00:00Z, which is 2026-09-16 14:00 Europe/Berlin (CEST, UTC+2) - every
+  // naive startTime below is read that way, exactly as StudySession.startTime from GET
+  // /api/sessions actually is.
+  function session(overrides: Partial<StudySession> = {}): StudySession {
+    return {
+      id: 1,
+      courseId: 7,
+      courseName: "Mathe",
+      startTime: "2026-09-17T09:00:00",
+      endTime: "2026-09-17T10:00:00",
+      isCompleted: false,
+      ...overrides,
+    };
+  }
+
+  it("drops past sessions and phrases today/tomorrow/in-N-days like GoalRow.due, with the time appended", () => {
+    const rows = upcomingSessions(
+      [
+        session({ courseName: "Already done", startTime: "2026-09-16T08:00:00" }), // past - dropped
+        session({ courseName: "Later today", startTime: "2026-09-16T16:00:00" }),
+        session({ courseName: "Tomorrow morning", startTime: "2026-09-17T09:00:00" }),
+        session({ courseName: "In a few days", startTime: "2026-09-20T10:30:00" }),
+      ],
+      NOW,
+    );
+    expect(rows.map((r) => r.courseName)).toEqual([
+      "Later today",
+      "Tomorrow morning",
+      "In a few days",
+    ]);
+    expect(rows.map((r) => r.when)).toEqual([
+      "today at 16:00",
+      "tomorrow at 09:00",
+      "in 4 days at 10:30",
+    ]);
+  });
+
+  it("sorts ascending by start time regardless of input order", () => {
+    const rows = upcomingSessions(
+      [
+        session({ courseName: "Third", startTime: "2026-09-20T10:00:00" }),
+        session({ courseName: "First", startTime: "2026-09-16T15:00:00" }),
+        session({ courseName: "Second", startTime: "2026-09-17T08:00:00" }),
+      ],
+      NOW,
+    );
+    expect(rows.map((r) => r.courseName)).toEqual(["First", "Second", "Third"]);
+  });
+
+  it("takes only the first 5", () => {
+    const many = Array.from({ length: 8 }, (_, i) =>
+      session({
+        courseName: `Session ${i}`,
+        startTime: `2026-09-${String(17 + i).padStart(2, "0")}T09:00:00`,
+      }),
+    );
+    expect(upcomingSessions(many, NOW)).toHaveLength(5);
+  });
+
+  it("returns an empty list for missing, malformed or entirely-past input", () => {
+    expect(upcomingSessions(undefined, NOW)).toEqual([]);
+    expect(upcomingSessions([], NOW)).toEqual([]);
+    expect(upcomingSessions("nope" as unknown as StudySession[], NOW)).toEqual([]);
+    expect(upcomingSessions([session({ startTime: "2020-01-01T00:00:00" })], NOW)).toEqual([]);
+    expect(upcomingSessions([session({ startTime: "not a date" })], NOW)).toEqual([]);
+  });
+
+  it("is reflected in buildPanel's upcomingSessions field", () => {
+    const m = buildPanel(base({ sessions: [session({ startTime: "2026-09-17T09:00:00" })] }));
+    expect(m.upcomingSessions).toHaveLength(1);
+    expect(m.upcomingSessions[0]?.courseName).toBe("Mathe");
+  });
+
+  it("is empty in buildPanel when no sessions were fetched (missing scope, or a failed poll)", () => {
+    expect(buildPanel(base()).upcomingSessions).toEqual([]);
   });
 });
 

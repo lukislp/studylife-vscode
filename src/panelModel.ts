@@ -3,8 +3,9 @@
 // how an empty metrics response renders - are testable on their own. panel.ts turns this into
 // HTML.
 
-import type { MetricsSummary, UpcomingGoal } from "./api.js";
+import type { MetricsSummary, StudySession, UpcomingGoal } from "./api.js";
 import { type Stretch, durationMs, formatDuration, formatHours } from "./activity.js";
+import { berlinClockTime, berlinDaysBetween, parseBerlinNaive } from "./berlinTime.js";
 import {
   type TimerState,
   canChangeMode,
@@ -30,6 +31,12 @@ export interface Snapshot {
    * them apart, and only for the window that set it. Ignored while `timer` is actually running.
    */
   pausedRemainingMs?: number | undefined;
+  /** Every session from GET /api/sessions (Sessions.GetAll), past and future - undefined when
+   *  this installation was not granted that scope, or the poll fetching it failed. Filtered and
+   *  sorted down to the next few upcoming ones by upcomingSessions() below; this is never
+   *  day-windowed or paginated server-side (see StudySession's doc comment), so all of it has to
+   *  be shipped over just to pick a handful out client-side. */
+  sessions?: StudySession[] | undefined;
   now: number;
 }
 
@@ -64,11 +71,20 @@ export interface GoalRow {
   overdue: boolean;
 }
 
+export interface UpcomingSessionRow {
+  courseName: string;
+  /** "today at 14:05", "tomorrow at 09:00", "in 3 days at 16:30" - mirrors GoalRow.due's
+   *  today/in-N-days phrasing, with the clock time appended since a session (unlike a goal's
+   *  target date) is scheduled to a specific time, not just a day. */
+  when: string;
+}
+
 export interface PanelModel {
   connected: boolean;
   timer: TimerCard;
   stats: StatTile[];
   goals: GoalRow[];
+  upcomingSessions: UpcomingSessionRow[];
   courseName?: string | undefined;
   tracked?: string | undefined;
 }
@@ -79,6 +95,7 @@ export function buildPanel(s: Snapshot): PanelModel {
     timer: timerCard(s),
     stats: stats(s.metrics, s.todayHours),
     goals: goals(s.metrics),
+    upcomingSessions: upcomingSessions(s.sessions, s.now),
     ...(s.courseName === undefined ? {} : { courseName: s.courseName }),
     ...(s.tracked === undefined
       ? {}
@@ -162,4 +179,46 @@ function goals(metrics: MetricsSummary | undefined): GoalRow[] {
 export function activeGoals(metrics: MetricsSummary | undefined): UpcomingGoal[] {
   const goals = metrics?.upcomingCourseGoals;
   return Array.isArray(goals) ? goals.filter((g) => typeof g?.courseId === "number") : [];
+}
+
+/** How many upcoming sessions the panel shows - a glance list, not a calendar. */
+const MAX_UPCOMING_SESSIONS = 5;
+
+/** "today at 14:05" / "tomorrow at 09:00" / "in 3 days at 16:30" - see UpcomingSessionRow.when. */
+function formatSessionWhen(startMs: number, now: number): string {
+  const daysAhead = berlinDaysBetween(now, startMs);
+  const time = berlinClockTime(startMs);
+  if (daysAhead <= 0) return `today at ${time}`;
+  if (daysAhead === 1) return `tomorrow at ${time}`;
+  return `in ${daysAhead} days at ${time}`;
+}
+
+/**
+ * The next few planned sessions, soonest first.
+ *
+ * GET /api/sessions (Sessions.GetAll) returns every session ever created, past and future, with
+ * no day window and no pagination (unlike Sessions.GetHistory) - see StudySession's doc comment.
+ * So "upcoming" has to be picked out and sorted here rather than trusted from the response order.
+ *
+ * startTime is naive Europe/Berlin local time with no offset in the JSON (see berlinTime.ts) -
+ * comparing it against `now` via a plain Date.parse would silently get "future" wrong on any
+ * machine not itself running in Europe/Berlin, which is exactly the class of bug this account's
+ * other StudyLife clients have hit before.
+ */
+export function upcomingSessions(
+  sessions: StudySession[] | undefined,
+  now: number,
+): UpcomingSessionRow[] {
+  if (!Array.isArray(sessions)) return [];
+  return sessions
+    .map((s) => ({ session: s, startMs: parseBerlinNaive(s?.startTime ?? "") }))
+    .filter(
+      (x) => !Number.isNaN(x.startMs) && x.startMs > now && typeof x.session?.courseId === "number",
+    )
+    .sort((a, b) => a.startMs - b.startMs)
+    .slice(0, MAX_UPCOMING_SESSIONS)
+    .map((x) => ({
+      courseName: x.session.courseName,
+      when: formatSessionWhen(x.startMs, now),
+    }));
 }

@@ -18,8 +18,8 @@ course instead of being lost.
 **In the sidebar** — a StudyLife icon in the Activity Bar opens a panel with a timer card at the
 top: the phase, a large countdown, the mode and round, and a progress bar through the current
 focus or break block. **Start, pause and stop are buttons in the card.** Below it sit today's and
-this week's hours with your streak, your open course goals with their countdowns, and this
-workspace's course and tracked time.
+this week's hours with your streak, your open course goals with their countdowns, your next five
+upcoming sessions with their start time, and this workspace's course and tracked time.
 
 The progress bar is only ever determinate when the length is actually known. Custom timer modes
 live in your StudyLife settings, which this extension has no scope to read, so for those the bar
@@ -30,6 +30,17 @@ A paused session reads **Paused**, with the remaining time frozen where you left
 turn the timer off), so this extension remembers the pause itself for as long as this window is
 open, and shows it as its own state instead of rendering it identically to a real stop. The status
 bar's tooltip makes the same distinction.
+
+The countdown that freezes on Pause and the one a later Resume starts from are the *same* number:
+a periodic poll started just before you click Pause can otherwise answer just after that click's
+own save completes, and repaint the still-running countdown right back over the freshly paused
+one — a Resume immediately after would then start from a value that has kept ticking down
+underneath the "Paused" label instead of the one you actually paused at. Every place this
+extension writes the shared timer state now keeps a ticket for the most recently issued attempt
+and drops the result of anything superseded, however the two race, so this can no longer happen.
+
+**Below your open course goals, the next five upcoming sessions** show each course and its start
+time — a read-only glance list, not a calendar.
 
 Starting from the panel asks **which course** the session is for, and offers only the courses you
 are currently working towards — those with an open course goal. StudyLife has no "active" flag on
@@ -82,7 +93,7 @@ once per instance through [studylife-developers](https://github.com/lukislp/stud
 | --- | --- |
 | Client ID | `studylife-vscode` |
 | Redirect URIs | `http://127.0.0.1:8775/callback`, `http://127.0.0.1:8776/callback`, `http://127.0.0.1:8777/callback`, `http://127.0.0.1:8778/callback` |
-| Scopes | `TimerState.Get`, `TimerState.Save`, `Sessions.Create`, `Sessions.GetHistory`, `Courses.GetAll`, `Metrics.GetSummary` |
+| Scopes | `TimerState.Get`, `TimerState.Save`, `Sessions.Create`, `Sessions.GetAll`, `Sessions.GetHistory`, `Courses.GetAll`, `Metrics.GetSummary` |
 
 All four redirect URIs are needed because the login flow validates `redirect_uri` by **exact**
 match, and the extension binds whichever of those four loopback ports is free. They deliberately
@@ -90,7 +101,8 @@ differ from `studylife-cli`'s 8765–8768 so both can be logged in at the same t
 
 Grant only what you want: the extension degrades rather than breaks. Without `TimerState.Save` the
 timer commands report a permission error and everything else keeps working; without
-`Sessions.Create` the coding-time suggestion has nowhere to go.
+`Sessions.Create` the coding-time suggestion has nowhere to go; without `Sessions.GetAll` the
+"Upcoming sessions" list is simply left empty rather than shown as broken.
 
 ### 2. Connect
 
@@ -148,18 +160,36 @@ npm run package    # produce the .vsix
 produces an extension that fails to activate.
 
 The modules without editor dependencies (`oauth.ts`, `activity.ts`, `timer.ts`, `panelModel.ts`,
-`html.ts`, the render functions in `statusBar.ts`) hold the rules that are easy to get subtly
-wrong, and those are what the tests cover — PKCE shape, constant-time state comparison, callback
-parsing, the stretch/idle arithmetic, the timer transitions, the panel's HTML-escaping, and
-everything the panel displays. `panel.ts` keeps the vscode-facing half separate precisely so
-`panelModel.ts` can be tested without an editor; `auth.ts` and its loopback server are tested
-against a small `vscode` stand-in aliased in `vitest.config.mts` instead, since only the socket
-and secret-storage plumbing needs the real editor.
+`html.ts`, `berlinTime.ts`, `sequencer.ts`, the render functions in `statusBar.ts`) hold the rules
+that are easy to get subtly wrong, and those are what the tests cover — PKCE shape, constant-time
+state comparison, callback parsing, the stretch/idle arithmetic, the timer transitions, the
+panel's HTML-escaping, naive-local-time conversion, and everything the panel displays. `panel.ts`
+keeps the vscode-facing half separate precisely so `panelModel.ts` can be tested without an
+editor; `auth.ts` and its loopback server are tested against a small `vscode` stand-in aliased in
+`vitest.config.mts` instead, since only the socket and secret-storage plumbing needs the real
+editor.
 
 `timer.ts` and `runLog.ts` are worth reading before changing anything about the timer. The wire
 shape has neither a "paused" flag nor a course, and the server accepts unknown JSON properties
 silently — so a wrong field name produces a green build and a control that does nothing. Both
-mistakes were made here before the shape was checked against `TimerStateEntity`.
+mistakes were made here before the shape was checked against `TimerStateEntity`. The opposite
+mistake bit `createSession()`: `NewSession` never carried `courseName` at all, and the server
+*requires* it non-empty (even though it immediately overwrites it from `courseId`), so every
+session this extension tried to log failed with a 400 until `runLog.ts`'s `placeholderCourseName`
+was added.
+
+`sequencer.ts`'s `LatestWins` guards `extension.ts`'s shared timer state against the periodic
+poll and a command's own save racing each other — see its doc comment for the exact bug this
+prevents (a stale poll answer overwriting a just-paused state) and `tests/sequencer.test.ts` for a
+reproduction of the race with real async timing.
+
+`media/studylife-icon-activitybar.png` (the Activity Bar's `viewsContainers` icon) is generated,
+not hand-edited: it is a transparent silhouette derived from `media/studylife-icon.png` by
+`scripts/make-activitybar-icon.mjs`, since VS Code renders that icon as a theme-tinted mask and
+the source PWA icon has no alpha channel at all (it is `"purpose": "any maskable"`, meant to keep
+its own background). Regenerate with `npm run icons` after the source logo changes; the script is
+the only source of truth for that file, the same convention `studylife-streamdeck`'s
+`scripts/render-icons.mjs` uses for its own generated PNGs.
 
 ## Licence
 

@@ -121,7 +121,7 @@
         {
           "id": "studylife",
           "title": "StudyLife",
-          "icon": "media/studylife-icon.png"
+          "icon": "media/studylife-icon-activitybar.png"
         }
       ]
     },
@@ -151,6 +151,7 @@
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" \"*.{mjs,mts}\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\" \"*.{mjs,mts}\"",
     "test": "vitest run",
+    "icons": "node scripts/make-activitybar-icon.mjs",
     "package": "npx --yes @vscode/vsce package --no-dependencies --out studylife-vscode.vsix"
   },
   "devDependencies": {
@@ -158,6 +159,7 @@
     "@types/vscode": "1.90.0",
     "esbuild": "^0.28.0",
     "prettier": "^3.0.0",
+    "sharp": "^0.35.4",
     "typescript": "^7.0.2",
     "vitest": "^5.0.0"
   }
