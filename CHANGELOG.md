@@ -1,3 +1,10 @@
+## [1.4.3](https://github.com/lukislp/studylife-vscode/compare/v1.4.2...v1.4.3) (2026-09-18)
+
+
+### Bug Fixes
+
+* distinguish a paused focus timer, and use the official logo ([#17](https://github.com/lukislp/studylife-vscode/issues/17)) ([507f324](https://github.com/lukislp/studylife-vscode/commit/507f324ba0b667d28e1a7bbe955680a28dbf0d9d))
+
 ## [1.4.2](https://github.com/lukislp/studylife-vscode/compare/v1.4.1...v1.4.2) (2026-09-17)
 
 
