@@ -12,15 +12,21 @@ export interface RenderInput {
   metrics?: MetricsSummary | undefined;
   tracked?: Stretch | undefined;
   todayHours?: number | undefined;
+  /**
+   * Whether *this window* is the one holding a pause to resume - the wire has no paused flag
+   * (see timer.ts's phaseOf doc comment), so a paused session looks exactly like a stopped one
+   * in `timer`. Only extension.ts's RESUME_KEY (set on pause, cleared on start/stop) can tell the
+   * two apart, and only for the window that set it.
+   */
+  pausedLocally?: boolean | undefined;
   now: number;
 }
 
 /** Split out from the vscode item so the text/tooltip rules are unit-testable. */
 export function renderLabel(input: RenderInput): string {
   if (!input.connected) return "$(circle-slash) StudyLife";
-  if (input.timer?.isRunning) {
-    return input.timer.isPaused ? "$(debug-pause) StudyLife" : "$(record) StudyLife";
-  }
+  if (input.timer?.isRunning) return "$(record) StudyLife";
+  if (input.pausedLocally) return "$(debug-pause) StudyLife";
   const today = input.todayHours;
   return today === undefined ? "$(watch) StudyLife" : `$(watch) ${formatHours(today)}`;
 }
@@ -31,10 +37,10 @@ export function renderTooltip(input: RenderInput): string {
   }
   const lines: string[] = [];
   const timerLine = input.timer?.isRunning
-    ? input.timer.isPaused
+    ? "Focus timer: running"
+    : input.pausedLocally
       ? "Focus timer: paused"
-      : "Focus timer: running"
-    : "Focus timer: stopped";
+      : "Focus timer: stopped";
   lines.push(timerLine);
 
   const hours = input.metrics?.hours;

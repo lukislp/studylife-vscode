@@ -215,7 +215,10 @@ function connected(m: PanelModel): string {
   const actions = t.running
     ? `<button data-command="studylife.pauseTimer">Pause</button>
        <button data-command="studylife.stopTimer">Stop</button>`
-    : `<button class="primary" data-command="studylife.startTimerWithCourse">Start session</button>`;
+    : t.paused
+      ? `<button class="primary" data-command="studylife.startTimer">Resume</button>
+         <button data-command="studylife.stopTimer">Stop</button>`
+      : `<button class="primary" data-command="studylife.startTimerWithCourse">Start session</button>`;
 
   const goals = m.goals.length
     ? m.goals

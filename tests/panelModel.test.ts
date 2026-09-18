@@ -57,6 +57,57 @@ describe("timer card", () => {
   });
 });
 
+describe("paused vs. stopped", () => {
+  // The wire has no paused flag (see timer.ts's phaseOf) - a pause and a real stop both come
+  // back as isRunning: false. pausedRemainingMs is the extension's own memory of a pause it is
+  // still holding (extension.ts's RESUME_KEY), and it is the only thing that can tell the two
+  // apart at render time.
+  it("reads Paused, with the frozen remainder as the countdown, when this window is holding a pause", () => {
+    const t = buildPanel(
+      base({ timer: { isRunning: false }, pausedRemainingMs: 8 * MIN + 30_000 }),
+    ).timer;
+    expect(t.phase).toBe("Paused");
+    expect(t.paused).toBe(true);
+    expect(t.running).toBe(false);
+    expect(t.countdown).toBe("8:30");
+  });
+
+  it("still reads Stopped, not Paused, when nothing is remembered locally", () => {
+    const t = buildPanel(base({ timer: { isRunning: false } })).timer;
+    expect(t.phase).toBe("Stopped");
+    expect(t.paused).toBe(false);
+    expect(t.countdown).toBeUndefined();
+  });
+
+  it("ignores a leftover pausedRemainingMs while the timer is genuinely running", () => {
+    // Should not happen in practice - RESUME_KEY is cleared before a start is sent - but the
+    // render layer must not invent "Paused" over a phase that is actually counting down.
+    const t = buildPanel(
+      base({
+        timer: {
+          isRunning: true,
+          timerModeId: 1,
+          phaseEndsAt: new Date(NOW + 10 * MIN).toISOString(),
+        },
+        pausedRemainingMs: 5 * MIN,
+      }),
+    ).timer;
+    expect(t.phase).toBe("Focus");
+    expect(t.paused).toBe(false);
+    expect(t.countdown).toBe("10:00");
+  });
+
+  it("does not read Paused off a real stop that also reset the session", () => {
+    // A stop resets currentRound to 1 and clears sessionId, but neither of those - only the
+    // local pausedRemainingMs - decides Paused vs. Stopped.
+    const t = buildPanel(
+      base({ timer: { isRunning: false, sessionId: null, currentRound: 1 } }),
+    ).timer;
+    expect(t.phase).toBe("Stopped");
+    expect(t.paused).toBe(false);
+  });
+});
+
 describe("stats", () => {
   it("renders the three tiles from the metrics API", () => {
     const stats = buildPanel(

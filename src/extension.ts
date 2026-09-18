@@ -47,6 +47,9 @@ const FAILURE_NOTIFY_THRESHOLD = 2;
 let api: StudyLifeApi | undefined;
 let statusBar: StatusBar;
 let panel: StudyLifePanel;
+/** Kept so refresh() - which polls on a timer, not just after a command - can read RESUME_KEY
+ *  without every caller having to thread the extension context through. */
+let extensionContext: vscode.ExtensionContext | undefined;
 /** Course name for the current workspace, resolved lazily so the sidebar can show it without
  *  an extra request on every poll. */
 let workspaceCourseName: string | undefined;
@@ -62,6 +65,7 @@ let consecutivePollFailures = 0;
 let notifiedThisOutage = false;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
+  extensionContext = context;
   statusBar = new StatusBar();
   context.subscriptions.push(statusBar);
   panel = new StudyLifePanel(context.extensionUri);
@@ -119,6 +123,20 @@ async function reconfigure(context: vscode.ExtensionContext): Promise<void> {
   await refresh();
 }
 
+/**
+ * Milliseconds left when *this window* paused the timer (RESUME_KEY), or undefined when it did
+ * not. The wire has no paused flag - a paused session and a stopped one both come back as
+ * `isRunning: false` - so this is the only place that distinction can come from, and only for
+ * as long as this window is the one still holding it. Gated on `timerState` actually being
+ * stopped so a stale RESUME_KEY (there should not be one - see controlTimer - but poll timing is
+ * not something to bet display correctness on) never overrides a state that is genuinely
+ * running.
+ */
+function pausedRemainingMs(timerState: TimerState | undefined): number | undefined {
+  const resumeMs = extensionContext?.globalState.get<number>(RESUME_KEY);
+  return resumeMs !== undefined && timerState?.isRunning !== true ? resumeMs : undefined;
+}
+
 async function refresh(): Promise<void> {
   if (!api) {
     const now = Date.now();
@@ -139,6 +157,7 @@ async function refresh(): Promise<void> {
     lastMetrics = metrics;
     consecutivePollFailures = 0;
     notifiedThisOutage = false;
+    const pausedMs = pausedRemainingMs(timerState);
     const snapshot = {
       connected: true,
       timer: timerState,
@@ -147,8 +166,12 @@ async function refresh(): Promise<void> {
       ...(todayHours === undefined ? {} : { todayHours }),
       now,
     };
-    statusBar.render(snapshot);
-    panel.update({ ...snapshot, courseName: workspaceCourseName });
+    statusBar.render({ ...snapshot, pausedLocally: pausedMs !== undefined });
+    panel.update({
+      ...snapshot,
+      courseName: workspaceCourseName,
+      ...(pausedMs === undefined ? {} : { pausedRemainingMs: pausedMs }),
+    });
   } catch (error) {
     // A single failed poll is not worth a modal - the status bar going quiet is signal enough,
     // and the next tick may well succeed. A scope problem is the exception: it never fixes
