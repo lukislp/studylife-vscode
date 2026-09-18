@@ -144,6 +144,25 @@ function pausedRemainingMs(timerState: TimerState | undefined): number | undefin
   return resumeMs !== undefined && timerState?.isRunning !== true ? resumeMs : undefined;
 }
 
+/**
+ * Renders just the timer state, immediately, from a value already in hand - no network round
+ * trip of its own. Used right after a save resolves, so Start/Pause/Resume show the correct
+ * countdown without waiting for refresh()'s slower metrics/today's-hours/every-session-ever
+ * round trip too - see controlTimer's call site for why that wait was visible as several
+ * seconds vanishing. Metrics/sessions keep showing whatever refresh() last fetched until its own
+ * call, right after this one, catches up and repaints everything again.
+ */
+function renderTimerImmediately(state: TimerState, now: number): void {
+  const pausedMs = pausedRemainingMs(state);
+  const snapshot = { connected: true, timer: state, metrics: lastMetrics, tracked: tracker.peek(), now };
+  statusBar.render({ ...snapshot, pausedLocally: pausedMs !== undefined });
+  panel.update({
+    ...snapshot,
+    courseName: workspaceCourseName,
+    ...(pausedMs === undefined ? {} : { pausedRemainingMs: pausedMs }),
+  });
+}
+
 async function refresh(): Promise<void> {
   if (!api) {
     const now = Date.now();
@@ -284,7 +303,16 @@ async function controlTimer(
     // since taken over - see sequencer.ts. refresh() below issues its own, always-newer ticket
     // and re-fetches the authoritative state regardless, so skipping this write when superseded
     // never leaves the UI stuck on stale data.
-    if (timerStateSeq.isCurrent(ticket)) lastTimerState = saved;
+    if (timerStateSeq.isCurrent(ticket)) {
+      lastTimerState = saved;
+      // Render the countdown right now, from what the save just answered - not once refresh()
+      // below has *also* round-tripped for metrics/today's hours/every session ever (Sessions.
+      // GetAll is unbounded, see api.ts), which on a slower connection took long enough that the
+      // very next render already looked like several seconds had vanished the moment Start,
+      // Pause or Resume was pressed. remainingMs(saved, now) is exact - now was captured before
+      // the save's own network round trip, so it does not itself drift while awaiting.
+      renderTimerImmediately(saved, now);
+    }
 
     if (action === "start" && courseId !== undefined) {
       const run: TimerRun = {
