@@ -1,3 +1,10 @@
+## [1.6.1](https://github.com/lukislp/studylife-vscode/compare/v1.6.0...v1.6.1) (2026-09-20)
+
+
+### Bug Fixes
+
+* **ci:** add Harden Runner in audit mode to every job ([#26](https://github.com/lukislp/studylife-vscode/issues/26)) ([d309d98](https://github.com/lukislp/studylife-vscode/commit/d309d98b51f1c18e6085bcc2f2ffefdc7f1d11ec))
+
 # [1.6.0](https://github.com/lukislp/studylife-vscode/compare/v1.5.1...v1.6.0) (2026-09-18)
 
 
