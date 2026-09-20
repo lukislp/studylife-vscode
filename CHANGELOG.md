@@ -1,3 +1,10 @@
+## [1.6.2](https://github.com/lukislp/studylife-vscode/compare/v1.6.1...v1.6.2) (2026-09-20)
+
+
+### Bug Fixes
+
+* **ci:** correct missing Harden Runner allowlist ports (github.com:22, crl:80) ([#28](https://github.com/lukislp/studylife-vscode/issues/28)) ([ca130a6](https://github.com/lukislp/studylife-vscode/commit/ca130a60927b627767994fbd694da95326d08f2e))
+
 ## [1.6.1](https://github.com/lukislp/studylife-vscode/compare/v1.6.0...v1.6.1) (2026-09-20)
 
 
