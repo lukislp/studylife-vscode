@@ -155,7 +155,7 @@
     "package": "npx --yes @vscode/vsce package --no-dependencies --out studylife-vscode.vsix"
   },
   "devDependencies": {
-    "@types/node": "^26.5.1",
+    "@types/node": "^26.6.2",
     "@types/vscode": "1.138.0",
     "esbuild": "^0.28.0",
     "prettier": "^3.9.8",
