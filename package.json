@@ -159,7 +159,7 @@
     "@types/vscode": "1.138.0",
     "esbuild": "^0.28.0",
     "prettier": "^3.9.9",
-    "sharp": "^0.35.4",
+    "sharp": "^0.35.5",
     "typescript": "^7.0.2",
     "vitest": "^5.0.2"
   }
