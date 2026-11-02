@@ -16,6 +16,10 @@ updates:
       ci-workflows:
         patterns:
           - "lukislp/ci-workflows*"
+      # init, analyze and upload-sarif must run the same version - one PR for all.
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
   - package-ecosystem: npm
     directory: /
     schedule:
@@ -28,3 +32,8 @@ updates:
     reviewers:
       - "lukislp"
     open-pull-requests-limit: 5
+    ignore:
+      # @types/vscode must not be newer than engines.vscode (vsce refuses to package);
+      # bump both together by hand when raising the minimum VS Code version.
+      - dependency-name: "@types/vscode"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
