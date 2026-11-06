@@ -16,8 +16,8 @@ small - but it is the same for every change, including the maintainer's own.
 
 ## What a pull request needs
 
-- **Conventional Commits.** The version and `CHANGELOG.md` are generated from the commit messages
-  by semantic-release (`fix:` = patch release, `feat:` = minor release; `build:`/`ci:`/`docs:`/
+- **Conventional Commits.** The version and the release notes are generated from the commit
+  messages by the lktec-bot release module (rules in `.github/lktec-bot.yml`; `fix:` = patch release, `feat:` = minor release; `build:`/`ci:`/`docs:`/
   `test:`/`chore:` produce no release). If the PR is squash-merged, the squashed commit message -
   usually the PR title - is what gets analyzed, so give the PR a Conventional Commit title too.
 - **Tests for new functionality.** New behaviour and bug fixes come with tests under `tests/`
