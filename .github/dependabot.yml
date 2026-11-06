@@ -16,6 +16,10 @@ updates:
       ci-workflows:
         patterns:
           - "lukislp/ci-workflows*"
+      # Same for the lktec-bot workflows (automerge, lockfiles, release): one PR per release.
+      lktec-bot:
+        patterns:
+          - "lukislp/lktec-bot*"
       # init, analyze and upload-sarif must run the same version - one PR for all.
       codeql-action:
         patterns:
