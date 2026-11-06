@@ -18,6 +18,8 @@ env:
 # jobs that need more declare it themselves.
 permissions:
   contents: read
+  # The reusable release workflow resolves its own commit through the Actions API.
+  actions: read
 
 jobs:
   # Named "lint" for the required-status-check context in the main ruleset (rules/branches/main),
