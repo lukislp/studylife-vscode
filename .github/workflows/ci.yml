@@ -18,6 +18,8 @@ env:
 # jobs that need more declare it themselves.
 permissions:
   contents: read
+  # The reusable release workflow resolves its own commit through the Actions API.
+  actions: read
 
 jobs:
   # Named "lint" for the required-status-check context in the main ruleset (rules/branches/main),
@@ -170,7 +172,8 @@ jobs:
             timestamp.sigstore.dev:443
             token.actions.githubusercontent.com:443
             tuf-repo-cdn.sigstore.dev:443
-            uploads.github.com:443      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            uploads.github.com:443
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.release.outputs.tag }}
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
