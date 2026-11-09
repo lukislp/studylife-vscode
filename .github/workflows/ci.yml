@@ -113,7 +113,7 @@ jobs:
   get-version:
     needs: [build]
     if: github.event_name == 'push'
-    uses: lukislp/lktec-bot/.github/workflows/release.yml@d2e0693df66fa10167181e6c3844cdc2032f4399 # v0.7.2
+    uses: lukislp/lktec-bot/.github/workflows/release.yml@ccd513e3fa47d8a6e6f374fe1d6c561232807b65 # v0.8.0
     with:
       dry-run: true
     secrets:
@@ -123,7 +123,7 @@ jobs:
   release:
     needs: [get-version]
     if: github.event_name == 'push' && needs.get-version.outputs.released == 'true'
-    uses: lukislp/lktec-bot/.github/workflows/release.yml@d2e0693df66fa10167181e6c3844cdc2032f4399 # v0.7.2
+    uses: lukislp/lktec-bot/.github/workflows/release.yml@ccd513e3fa47d8a6e6f374fe1d6c561232807b65 # v0.8.0
     secrets:
       app-id: ${{ secrets.LKTEC_BOT_APP_ID }}
       private-key: ${{ secrets.LKTEC_BOT_PRIVATE_KEY }}
@@ -201,7 +201,7 @@ jobs:
       #   cosign verify-blob --bundle <asset>.sigstore.json \
       #     --certificate-identity-regexp '^https://github.com/lukislp/studylife-vscode/' \
       #     --certificate-oidc-issuer https://token.actions.githubusercontent.com <asset>
-      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
       - name: Sign the release assets and attach the signature bundles
         run: |
           for f in studylife-vscode.vsix; do
