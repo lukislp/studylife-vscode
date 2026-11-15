@@ -191,7 +191,7 @@ ${m.connected ? connected(m) : disconnected()}
 function disconnected(): string {
   return `<div class="card">
   <div class="phase"><span class="dot"></span>Not connected</div>
-  <div class="sub" style="margin-top:8px">Connect to your StudyLife instance to see your timer and study time here.</div>
+  <div class="sub" style="margin-top:8px">Connect to your StudyAtrium instance to see your timer and study time here.</div>
   <div class="actions"><button class="primary" data-command="studylife.connect">Connect</button></div>
 </div>`;
 }

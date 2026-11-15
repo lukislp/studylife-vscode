@@ -38,9 +38,9 @@ small - but it is the same for every change, including the maintainer's own.
 - **No behind-the-back network calls or writes.** Turning tracked coding time into a session is
   always a confirmation the user answers (`vscode.window.showInformationMessage(...)` with
   "Log it"/"Discard") - see `activity.ts` and the note at the top of `extension.ts`'s
-  `offerStretch`. A misattributed session would skew the grade/ECTS correlations StudyLife
+  `offerStretch`. A misattributed session would skew the grade/ECTS correlations StudyAtrium
   computes from session history, so this is not just a style preference.
-- **Wire shapes.** The extension talks to a handful of StudyLife REST endpoints (`api.ts`). The
+- **Wire shapes.** The extension talks to a handful of StudyAtrium REST endpoints (`api.ts`). The
   server accepts unknown JSON properties silently, so a wrong field name produces a green build
   and a control that quietly does nothing - check a field against the server's actual DTO/entity
   before relying on it, don't guess from the docs alone.

@@ -24,16 +24,16 @@ export interface RenderInput {
 
 /** Split out from the vscode item so the text/tooltip rules are unit-testable. */
 export function renderLabel(input: RenderInput): string {
-  if (!input.connected) return "$(circle-slash) StudyLife";
-  if (input.timer?.isRunning) return "$(record) StudyLife";
-  if (input.pausedLocally) return "$(debug-pause) StudyLife";
+  if (!input.connected) return "$(circle-slash) StudyAtrium";
+  if (input.timer?.isRunning) return "$(record) StudyAtrium";
+  if (input.pausedLocally) return "$(debug-pause) StudyAtrium";
   const today = input.todayHours;
-  return today === undefined ? "$(watch) StudyLife" : `$(watch) ${formatHours(today)}`;
+  return today === undefined ? "$(watch) StudyAtrium" : `$(watch) ${formatHours(today)}`;
 }
 
 export function renderTooltip(input: RenderInput): string {
   if (!input.connected) {
-    return "Not connected to a StudyLife instance.\nRun “StudyLife: Connect to an instance”.";
+    return "Not connected to a StudyAtrium instance.\nRun “StudyAtrium: Connect to an instance”.";
   }
   const lines: string[] = [];
   const timerLine = input.timer?.isRunning

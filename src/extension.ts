@@ -221,11 +221,11 @@ async function refresh(): Promise<void> {
     // like a real outage rather than a blip - see FAILURE_NOTIFY_THRESHOLD.
     consecutivePollFailures += 1;
     if (error instanceof ApiError && error.status === 403) {
-      void vscode.window.showErrorMessage(`StudyLife: ${error.message}`);
+      void vscode.window.showErrorMessage(`StudyAtrium: ${error.message}`);
     } else if (consecutivePollFailures >= FAILURE_NOTIFY_THRESHOLD && !notifiedThisOutage) {
       notifiedThisOutage = true;
       const message = error instanceof Error ? error.message : String(error);
-      void vscode.window.showWarningMessage(`StudyLife: can't reach the server - ${message}`);
+      void vscode.window.showWarningMessage(`StudyAtrium: can't reach the server - ${message}`);
     }
     const now = Date.now();
     statusBar.render({ connected: true, now });
@@ -238,8 +238,8 @@ async function connect(context: vscode.ExtensionContext): Promise<void> {
   let instanceUrl = config.get<string>("instanceUrl", "").trim();
   if (!instanceUrl) {
     const entered = await vscode.window.showInputBox({
-      title: "StudyLife instance",
-      prompt: "Base URL of your StudyLife instance",
+      title: "StudyAtrium instance",
+      prompt: "Base URL of your StudyAtrium instance",
       placeHolder: "https://studylife.example.com",
       ignoreFocusOut: true,
     });
@@ -251,16 +251,16 @@ async function connect(context: vscode.ExtensionContext): Promise<void> {
     const apiKey = await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
-        title: "StudyLife: waiting for approval in your browser",
+        title: "StudyAtrium: waiting for approval in your browser",
       },
       () => runLogin(instanceUrl),
     );
     await storeApiKey(context, apiKey);
     await reconfigure(context);
-    void vscode.window.showInformationMessage("StudyLife: connected.");
+    void vscode.window.showInformationMessage("StudyAtrium: connected.");
   } catch (error) {
     const message = error instanceof LoginError ? error.message : String(error);
-    void vscode.window.showErrorMessage(`StudyLife: ${message}`);
+    void vscode.window.showErrorMessage(`StudyAtrium: ${message}`);
   }
 }
 
@@ -268,7 +268,7 @@ async function disconnect(context: vscode.ExtensionContext): Promise<void> {
   await clearApiKey(context);
   await reconfigure(context);
   void vscode.window.showInformationMessage(
-    "StudyLife: disconnected. The key stays valid on the server until you revoke it there.",
+    "StudyAtrium: disconnected. The key stays valid on the server until you revoke it there.",
   );
 }
 
@@ -278,7 +278,7 @@ async function controlTimer(
   courseId?: number,
 ): Promise<void> {
   if (!api) {
-    void vscode.window.showWarningMessage("StudyLife: not connected yet.");
+    void vscode.window.showWarningMessage("StudyAtrium: not connected yet.");
     return;
   }
   // Reserved as early as possible - right at the click, before this action's own await gap
@@ -334,7 +334,7 @@ async function controlTimer(
     await refresh();
   } catch (error) {
     const message = error instanceof ApiError ? error.message : String(error);
-    void vscode.window.showErrorMessage(`StudyLife: ${message}`);
+    void vscode.window.showErrorMessage(`StudyAtrium: ${message}`);
   }
 }
 
@@ -358,11 +358,11 @@ async function bookRun(
     if (decision.reason === "too-short" && run) {
       const label = formatDuration(now - run.startedAt);
       void vscode.window.showInformationMessage(
-        `StudyLife: ${label} was too short to record as a session.`,
+        `StudyAtrium: ${label} was too short to record as a session.`,
       );
     } else if (decision.reason === "no-run") {
       void vscode.window.showInformationMessage(
-        "StudyLife: nothing recorded - this window did not start the session, so it has no course or start time to book.",
+        "StudyAtrium: nothing recorded - this window did not start the session, so it has no course or start time to book.",
       );
     }
     // "planned" stays quiet on purpose: StudyLife is already accounting for that time, so
@@ -385,13 +385,13 @@ async function bookRun(
     });
     const label = formatDuration(decision.endedAt - decision.startedAt);
     void vscode.window.showInformationMessage(
-      `StudyLife: logged ${label}${run?.courseName ? ` for ${run.courseName}` : ""}.`,
+      `StudyAtrium: logged ${label}${run?.courseName ? ` for ${run.courseName}` : ""}.`,
     );
   } catch (error) {
     // Losing the session silently would be the worst outcome - the user stopped a timer they
     // believed was being recorded.
     const message = error instanceof ApiError ? error.message : String(error);
-    void vscode.window.showErrorMessage(`StudyLife: the session could not be saved - ${message}`);
+    void vscode.window.showErrorMessage(`StudyAtrium: the session could not be saved - ${message}`);
   }
 }
 
@@ -402,7 +402,7 @@ async function bookRun(
  */
 async function startTimerWithCourse(context: vscode.ExtensionContext): Promise<void> {
   if (!api) {
-    void vscode.window.showWarningMessage("StudyLife: not connected yet.");
+    void vscode.window.showWarningMessage("StudyAtrium: not connected yet.");
     return;
   }
   const courseId = await pickCourse("Start a focus session for");
@@ -420,7 +420,7 @@ function onActivity(context: vscode.ExtensionContext): void {
 async function offerOpenStretch(context: vscode.ExtensionContext): Promise<void> {
   const open = tracker.flush();
   if (!open) {
-    void vscode.window.showInformationMessage("StudyLife: nothing tracked in this window yet.");
+    void vscode.window.showInformationMessage("StudyAtrium: nothing tracked in this window yet.");
     return;
   }
   await offerStretch(context, open);
@@ -432,7 +432,7 @@ async function offerStretch(context: vscode.ExtensionContext, stretch: Stretch):
   const label = formatDuration(durationMs(stretch));
   const workspace = vscode.workspace.name ?? "this workspace";
   const choice = await vscode.window.showInformationMessage(
-    `StudyLife: ${label} of editing in ${workspace}. Log it as a study session?`,
+    `StudyAtrium: ${label} of editing in ${workspace}. Log it as a study session?`,
     "Log it",
     "Discard",
   );
@@ -449,11 +449,11 @@ async function offerStretch(context: vscode.ExtensionContext, stretch: Stretch):
       topic: workspace,
       timerModeId: DEFAULT_TIMER_MODE_ID,
     });
-    void vscode.window.showInformationMessage(`StudyLife: logged ${label}.`);
+    void vscode.window.showInformationMessage(`StudyAtrium: logged ${label}.`);
     await refresh();
   } catch (error) {
     const message = error instanceof ApiError ? error.message : String(error);
-    void vscode.window.showErrorMessage(`StudyLife: ${message}`);
+    void vscode.window.showErrorMessage(`StudyAtrium: ${message}`);
   }
 }
 
@@ -472,7 +472,7 @@ async function resolveCourse(context: vscode.ExtensionContext): Promise<number |
  */
 async function pickCourse(title: string): Promise<number | undefined> {
   if (!api) {
-    void vscode.window.showWarningMessage("StudyLife: not connected yet.");
+    void vscode.window.showWarningMessage("StudyAtrium: not connected yet.");
     return undefined;
   }
 
@@ -503,7 +503,7 @@ async function pickFromFullCatalogue(title: string): Promise<number | undefined>
   try {
     courses = (await api?.getCourses()) ?? [];
   } catch (error) {
-    void vscode.window.showErrorMessage(`StudyLife: ${String(error)}`);
+    void vscode.window.showErrorMessage(`StudyAtrium: ${String(error)}`);
     return undefined;
   }
   const picked = await vscode.window.showQuickPick(
@@ -548,7 +548,7 @@ async function rememberCourseName(
 async function pickTimerMode(context: vscode.ExtensionContext): Promise<void> {
   if (!canChangeMode(lastTimerState)) {
     void vscode.window.showWarningMessage(
-      "StudyLife: stop the timer before changing the mode - the running countdown is measured against the current length.",
+      "StudyAtrium: stop the timer before changing the mode - the running countdown is measured against the current length.",
     );
     return;
   }

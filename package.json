@@ -1,7 +1,7 @@
 {
   "name": "studylife-vscode",
-  "displayName": "StudyLife",
-  "description": "Control your StudyLife focus timer from the editor and turn coding time into study sessions.",
+  "displayName": "StudyAtrium",
+  "description": "Control your StudyAtrium focus timer from the editor and turn coding time into study sessions.",
   "version": "1.6.2",
   "publisher": "lukislp",
   "license": "AGPL-3.0-or-later",
@@ -35,58 +35,58 @@
     "commands": [
       {
         "command": "studylife.connect",
-        "title": "StudyLife: Connect to an instance"
+        "title": "StudyAtrium: Connect to an instance"
       },
       {
         "command": "studylife.disconnect",
-        "title": "StudyLife: Disconnect"
+        "title": "StudyAtrium: Disconnect"
       },
       {
         "command": "studylife.startTimer",
-        "title": "StudyLife: Start focus timer",
+        "title": "StudyAtrium: Start focus timer",
         "icon": "$(play)"
       },
       {
         "command": "studylife.startTimerWithCourse",
-        "title": "StudyLife: Start focus timer for a course",
+        "title": "StudyAtrium: Start focus timer for a course",
         "icon": "$(play-circle)"
       },
       {
         "command": "studylife.pauseTimer",
-        "title": "StudyLife: Pause focus timer",
+        "title": "StudyAtrium: Pause focus timer",
         "icon": "$(debug-pause)"
       },
       {
         "command": "studylife.stopTimer",
-        "title": "StudyLife: Stop focus timer",
+        "title": "StudyAtrium: Stop focus timer",
         "icon": "$(primitive-square)"
       },
       {
         "command": "studylife.logCodingTime",
-        "title": "StudyLife: Log tracked coding time as a session"
+        "title": "StudyAtrium: Log tracked coding time as a session"
       },
       {
         "command": "studylife.setWorkspaceCourse",
-        "title": "StudyLife: Set the course for this workspace"
+        "title": "StudyAtrium: Set the course for this workspace"
       },
       {
         "command": "studylife.setTimerMode",
-        "title": "StudyLife: Choose the focus mode",
+        "title": "StudyAtrium: Choose the focus mode",
         "icon": "$(settings-gear)"
       },
       {
         "command": "studylife.refresh",
-        "title": "StudyLife: Refresh now",
+        "title": "StudyAtrium: Refresh now",
         "icon": "$(refresh)"
       }
     ],
     "configuration": {
-      "title": "StudyLife",
+      "title": "StudyAtrium",
       "properties": {
         "studylife.instanceUrl": {
           "type": "string",
           "default": "",
-          "markdownDescription": "Base URL of your StudyLife instance, e.g. `https://studylife.example.com`. The API key itself is never stored here - it lives in the editor's secret storage."
+          "markdownDescription": "Base URL of your StudyAtrium instance, e.g. `https://studylife.example.com`. The API key itself is never stored here - it lives in the editor's secret storage."
         },
         "studylife.pollSeconds": {
           "type": "number",
@@ -120,7 +120,7 @@
       "activitybar": [
         {
           "id": "studylife",
-          "title": "StudyLife",
+          "title": "StudyAtrium",
           "icon": "media/studylife-icon-activitybar.png"
         }
       ]
@@ -130,7 +130,7 @@
         {
           "type": "webview",
           "id": "studylife.panel",
-          "name": "StudyLife"
+          "name": "StudyAtrium"
         }
       ]
     },
