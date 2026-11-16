@@ -12,22 +12,22 @@ function base(overrides: Partial<RenderInput> = {}): RenderInput {
 // so a pause always rendered identically to a stop.
 describe("renderLabel", () => {
   it("shows the recording dot while genuinely running", () => {
-    expect(renderLabel(base({ timer: { isRunning: true } }))).toBe("$(record) StudyLife");
+    expect(renderLabel(base({ timer: { isRunning: true } }))).toBe("$(record) StudyAtrium");
   });
 
   it("shows the pause icon when this window is holding a pause", () => {
     expect(renderLabel(base({ timer: { isRunning: false }, pausedLocally: true }))).toBe(
-      "$(debug-pause) StudyLife",
+      "$(debug-pause) StudyAtrium",
     );
   });
 
   it("falls back to the watch icon for a real stop", () => {
-    expect(renderLabel(base({ timer: { isRunning: false } }))).toBe("$(watch) StudyLife");
+    expect(renderLabel(base({ timer: { isRunning: false } }))).toBe("$(watch) StudyAtrium");
   });
 
   it("ignores pausedLocally while the timer is actually running", () => {
     expect(renderLabel(base({ timer: { isRunning: true }, pausedLocally: true }))).toBe(
-      "$(record) StudyLife",
+      "$(record) StudyAtrium",
     );
   });
 
@@ -39,7 +39,7 @@ describe("renderLabel", () => {
 
   it("shows the disconnected icon before anything else", () => {
     expect(renderLabel(base({ connected: false, timer: { isRunning: true } }))).toBe(
-      "$(circle-slash) StudyLife",
+      "$(circle-slash) StudyAtrium",
     );
   });
 });

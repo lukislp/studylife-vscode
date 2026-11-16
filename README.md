@@ -1,32 +1,34 @@
-# StudyLife for VS Code
+# StudyAtrium for VS Code
+
+(formerly StudyLife)
 
 [![CI](https://github.com/lukislp/studylife-vscode/actions/workflows/ci.yml/badge.svg)](https://github.com/lukislp/studylife-vscode/actions/workflows/ci.yml) [![OpenSSF Scorecard](https://img.shields.io/ossf-scorecard/github.com/lukislp/studylife-vscode?label=openssf+scorecard&style=flat)](https://scorecard.dev/viewer/?uri=github.com/lukislp/studylife-vscode) [![CodeQL](https://github.com/lukislp/studylife-vscode/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/lukislp/studylife-vscode/security/code-scanning)
 [![Release](https://img.shields.io/github/v/release/lukislp/studylife-vscode)](https://github.com/lukislp/studylife-vscode/releases)
 [![License: AGPL-3.0](https://img.shields.io/github/license/lukislp/studylife-vscode)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6)](https://www.typescriptlang.org/)
 
-Control your [StudyLife](https://github.com/lukislp/studylife) focus timer from the editor, and
+Control your [StudyAtrium](https://github.com/lukislp/studylife) focus timer from the editor, and
 turn the time you actually spend coding into study sessions.
 
 For a computer science degree, the editor is where most of the study time goes — and it is the one
-place StudyLife could not see. This extension closes that gap from both ends: the timer becomes
+place StudyAtrium could not see. This extension closes that gap from both ends: the timer becomes
 reachable without leaving the keyboard, and finished coding stretches can be logged against a
 course instead of being lost.
 
 ## What it does
 
-**In the sidebar** — a StudyLife icon in the Activity Bar opens a panel with a timer card at the
+**In the sidebar** — a StudyAtrium icon in the Activity Bar opens a panel with a timer card at the
 top: the phase, a large countdown, the mode and round, and a progress bar through the current
 focus or break block. **Start, pause and stop are buttons in the card.** Below it sit today's and
 this week's hours with your streak, your open course goals with their countdowns, your next five
 upcoming sessions with their start time, and this workspace's course and tracked time.
 
 The progress bar is only ever determinate when the length is actually known. Custom timer modes
-live in your StudyLife settings, which this extension has no scope to read, so for those the bar
+live in your StudyAtrium settings, which this extension has no scope to read, so for those the bar
 sweeps instead of claiming a fraction it cannot compute.
 
 A paused session reads **Paused**, with the remaining time frozen where you left it — not
-**Stopped**. StudyLife's server has no paused state of its own (pausing and stopping both just
+**Stopped**. StudyAtrium's server has no paused state of its own (pausing and stopping both just
 turn the timer off), so this extension remembers the pause itself for as long as this window is
 open, and shows it as its own state instead of rendering it identically to a real stop. The status
 bar's tooltip makes the same distinction.
@@ -43,23 +45,23 @@ and drops the result of anything superseded, however the two race, so this can n
 time — a read-only glance list, not a calendar.
 
 Starting from the panel asks **which course** the session is for, and offers only the courses you
-are currently working towards — those with an open course goal. StudyLife has no "active" flag on
+are currently working towards — those with an open course goal. StudyAtrium has no "active" flag on
 a course and the built-in catalogue alone carries around sixty, which is an unusable list to pick
 from. The full catalogue stays one click away. The question is offered only while the timer is
 stopped: changing the course of a session already under way would silently re-attribute time that
-has already been spent, and that history feeds StudyLife's grade and ECTS correlations.
+has already been spent, and that history feeds StudyAtrium's grade and ECTS correlations.
 
-**The timer books its own time.** StudyLife's timer does not record anything by itself — the web
+**The timer books its own time.** StudyAtrium's timer does not record anything by itself — the web
 app attaches it to a session the planner already created, and the timer state carries neither a
 course nor a start time. So when you start a session here and nothing was planned for that slot,
 the extension remembers what it started and writes the session when you stop, for the course you
-picked. If a planned session *was* attached, nothing is written: StudyLife is already accounting
+picked. If a planned session *was* attached, nothing is written: StudyAtrium is already accounting
 for that time, and a second row would double-count it in the history the grade correlations are
 computed from. Runs under a minute are dropped as mis-clicks.
 
 **In the status bar** — today's study time, or a recording dot while a focus session runs. The
 tooltip adds this week's hours, your streak, and the next course goal with its countdown. Every
-number comes from StudyLife's own metrics endpoint, the single place those are calculated, so the
+number comes from StudyAtrium's own metrics endpoint, the single place those are calculated, so the
 status bar can never quietly disagree with the web app.
 
 **Timer control** — start, pause and stop the focus timer from the command palette. The timer is
@@ -69,16 +71,16 @@ Home Assistant alike, and vice versa.
 **Coding time, as a suggestion** — editing activity is tracked per workspace. When a stretch ends,
 the extension *offers* to log it:
 
-> StudyLife: 2 h 14 min of editing in `betriebssysteme-uebung`. Log it as a study session?
+> StudyAtrium: 2 h 14 min of editing in `betriebssysteme-uebung`. Log it as a study session?
 
 It never records silently. A wrongly attributed block would land in the same session history
-StudyLife correlates against grades and ECTS, so a bad guess would not just add noise — it would
+StudyAtrium correlates against grades and ECTS, so a bad guess would not just add noise — it would
 quietly distort an analysis you rely on. You confirm the block and the course; the workspace's
 course is remembered after the first time.
 
 ## Requirements
 
-- A self-hosted StudyLife instance you can reach from this machine
+- A self-hosted StudyAtrium instance you can reach from this machine
 - VS Code 1.90 or newer
 - The client registered once on your instance (see below)
 
@@ -106,7 +108,7 @@ timer commands report a permission error and everything else keeps working; with
 
 ### 2. Connect
 
-Run **StudyLife: Connect to an instance** from the command palette. You are asked for your
+Run **StudyAtrium: Connect to an instance** from the command palette. You are asked for your
 instance URL, then sent to your browser to approve the connection. The approval comes back through
 a one-time assertion which is redeemed for this installation's own API key.
 
@@ -117,16 +119,16 @@ otherwise carry it to every machine you sign in on.
 
 | Command | What it does |
 | --- | --- |
-| `StudyLife: Connect to an instance` | Browser login, stores this installation's key |
-| `StudyLife: Disconnect` | Forgets the local key (revoke it on the server separately) |
-| `StudyLife: Start focus timer` | Starts the shared timer, keeping the current course |
-| `StudyLife: Start focus timer for a course` | Asks which course first |
-| `StudyLife: Choose the focus mode` | Picks the preset for the next session |
-| `StudyLife: Pause focus timer` | Pauses it |
-| `StudyLife: Stop focus timer` | Stops it |
-| `StudyLife: Log tracked coding time as a session` | Offers the stretch tracked so far |
-| `StudyLife: Set the course for this workspace` | Changes the remembered course |
-| `StudyLife: Refresh now` | Polls immediately instead of waiting |
+| `StudyAtrium: Connect to an instance` | Browser login, stores this installation's key |
+| `StudyAtrium: Disconnect` | Forgets the local key (revoke it on the server separately) |
+| `StudyAtrium: Start focus timer` | Starts the shared timer, keeping the current course |
+| `StudyAtrium: Start focus timer for a course` | Asks which course first |
+| `StudyAtrium: Choose the focus mode` | Picks the preset for the next session |
+| `StudyAtrium: Pause focus timer` | Pauses it |
+| `StudyAtrium: Stop focus timer` | Stops it |
+| `StudyAtrium: Log tracked coding time as a session` | Offers the stretch tracked so far |
+| `StudyAtrium: Set the course for this workspace` | Changes the remembered course |
+| `StudyAtrium: Refresh now` | Polls immediately instead of waiting |
 
 ## Settings
 
