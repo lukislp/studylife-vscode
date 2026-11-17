@@ -160,6 +160,7 @@ jobs:
             fulcio.sigstore.dev:443
             github.com:22
             github.com:443
+            marketplace.visualstudio.com:443
             registry.npmjs.org:443
             rekor.sigstore.dev:443
             release-assets.githubusercontent.com:443
