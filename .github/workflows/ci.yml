@@ -65,7 +65,9 @@ jobs:
       - run: npm ci || (npm cache clean --force && npm ci)
       - run: npm run typecheck
       - run: npm run format:check
-      - run: npm audit --audit-level=high
+      # npm audit at high/critical, minus the one advisory with no upstream fix (GHSA-fc5q-39xc-vjpf);
+      # remove the allowlist once picomatch publishes a patched release (micromatch/picomatch#194).
+      - run: node scripts/audit-allowlist.mjs
 
   build:
     needs: [lint]
