@@ -132,7 +132,7 @@ jobs:
 
   # Builds the packaged extension at the released version and attaches it, its Sigstore bundle and the
   # build provenance to the GitHub Release the `release` job created, then publishes it to the VS Code
-  # Marketplace. The tag is created by the lktec-bot App through the API (no signature on the tag); these
+  # Marketplace with trusted publishing (GitHub OIDC, no stored token). The tag is created by the lktec-bot App through the API (no signature on the tag); these
   # assets are what to verify.
   publish-assets:
     needs: [release]
@@ -148,12 +148,6 @@ jobs:
       TAG: ${{ needs.release.outputs.tag }}
       VERSION: ${{ needs.release.outputs.version }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # VSCE_PAT is a classic Azure DevOps PAT (Marketplace: Manage scope), created at
-      # dev.azure.com and set as a repo secret - not required for this workflow to succeed, so a
-      # release still completes normally (GitHub Release + signing) before this secret exists.
-      # Azure DevOps retires classic PATs on 2026-12-01; migrate to `vsce publish
-      # --azure-credential` (Entra ID workload identity federation) before then.
-      HAS_VSCE_PAT: ${{ secrets.VSCE_PAT != '' }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
@@ -189,14 +183,14 @@ jobs:
       - run: npm run package
       - name: Upload the packaged .vsix to the GitHub Release
         run: gh release upload "$TAG" studylife-vscode.vsix --clobber
+      # Marketplace trusted publishing: vsce exchanges this job's GitHub OIDC token for a short-lived
+      # Marketplace credential (`id-token: write` above). It needs a policy on the `lukislp` publisher
+      # (owner lukislp, repo studylife-vscode, workflow ci.yml, no environment) and never falls back
+      # to a PAT. vsce is the version pinned in package.json/package-lock.json (installed by `npm ci`,
+      # so `npx` runs the local copy). --skip-duplicate keeps a re-run of an already published
+      # version from failing the release.
       - name: Publish to the VS Code Marketplace
-        if: env.HAS_VSCE_PAT == 'true'
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: npx --yes @vscode/vsce publish --packagePath studylife-vscode.vsix -p "$VSCE_PAT"
-      - name: VSCE_PAT not set - skipping Marketplace publish
-        if: env.HAS_VSCE_PAT != 'true'
-        run: echo "VSCE_PAT is not set - this release was published to GitHub only, not the VS Code Marketplace." | tee -a "$GITHUB_STEP_SUMMARY"
+        run: npx vsce publish --oidc --skip-duplicate --packagePath studylife-vscode.vsix
       # Signed release assets (OpenSSF Scorecard "Signed-Releases"): a keyless Sigstore
       # signature bundle per asset plus one GitHub build-provenance attestation, uploaded next
       # to the assets so a download can be verified offline:

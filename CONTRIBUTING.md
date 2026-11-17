@@ -60,6 +60,19 @@ npm run package         # produce the .vsix
 See the README's [Development](README.md#development) section for more on how the modules are
 split and why.
 
+## How a release reaches the Marketplace
+
+A release is cut on every push to `main` whose commits warrant one (see above). The `publish-assets`
+job in `.github/workflows/ci.yml` then builds the `.vsix`, attaches it (with its Sigstore bundle and
+build provenance) to the GitHub Release and publishes it to the Visual Studio Marketplace with
+`vsce publish --oidc --skip-duplicate`. There is no stored token: **Marketplace trusted publishing**
+exchanges the job's GitHub OIDC token for a short-lived Marketplace credential. This needs a
+trusted publishing policy on the `lukislp` publisher (Trusted Publishing page of the publisher
+management site) with repository owner `lukislp`, repository `studylife-vscode`, workflow `ci.yml`
+and no environment. `--skip-duplicate` makes a re-run of an already published version a no-op.
+`vsce` is pinned in `package.json`/`package-lock.json` like the other tools.
+See the [VS Code publishing docs](https://code.visualstudio.com/api/working-with-extensions/publishing-extension).
+
 ## Security issues
 
 Please do not open a public issue for a vulnerability - use the private reporting path described
