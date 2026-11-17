@@ -30,6 +30,7 @@ small - but it is the same for every change, including the maintainer's own.
 - **Type checking.** `npm run typecheck` (`tsc --noEmit`) runs as a required check. The compiler
   options are strict on purpose (`strict`, `noUncheckedIndexedAccess`, `noImplicitOverride`,
   `exactOptionalPropertyTypes`) - work with that rather than loosening it for one change.
+- **Dependencies.** `node scripts/audit-allowlist.mjs` (high/critical `npm audit`) runs in `lint` and must stay clean. It allowlists only GHSA-fc5q-39xc-vjpf (picomatch, no upstream fix yet); remove the allowlist once picomatch publishes a patched release (micromatch/picomatch#194).
 - **Formatting.** `npm run format:check` (Prettier) runs as a required check; run
   `npm run format` before pushing. There is deliberately no ESLint step yet - typescript-eslint
   does not support the TypeScript major this repo builds with
