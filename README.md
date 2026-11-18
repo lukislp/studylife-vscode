@@ -147,6 +147,8 @@ What leaves your machine is: the poll for timer state and metrics, timer transit
 and sessions you explicitly confirm. File contents and file names are never sent — the workspace
 *name* is used as the session topic, and only for a session you approved.
 
+The full statement of what is stored, where it goes and how to remove it is in [PRIVACY.md](PRIVACY.md).
+
 ## Development
 
 ```bash
