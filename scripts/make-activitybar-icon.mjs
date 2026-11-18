@@ -1,4 +1,4 @@
-// Derives the Activity Bar's viewsContainers icon from the full-color StudyLife logo.
+// Derives the Activity Bar's viewsContainers icon from the full-color StudyAtrium logo.
 //
 // media/studylife-icon.png is the maskable PWA icon copied from lukislp/studylife's own
 // manifest.json ("purpose": "any maskable") - it is *designed* to be fully opaque, with the dark

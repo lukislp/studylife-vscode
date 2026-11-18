@@ -166,7 +166,7 @@ function goals(metrics: MetricsSummary | undefined): GoalRow[] {
 /**
  * The courses worth offering when starting a session.
  *
- * StudyLife has no "active" flag on a course - the built-in catalogue alone carries around sixty,
+ * StudyAtrium has no "active" flag on a course - the built-in catalogue alone carries around sixty,
  * and offering all of them is the wall of names this replaces. What it does have is course goals,
  * and the server already computes exactly the useful subset: upcomingCourseGoals is filtered to
  * goals with a target date that are NOT completed (StudyMetrics.CalcUpcomingCourseGoals), which
@@ -203,7 +203,7 @@ function formatSessionWhen(startMs: number, now: number): string {
  * startTime is naive Europe/Berlin local time with no offset in the JSON (see berlinTime.ts) -
  * comparing it against `now` via a plain Date.parse would silently get "future" wrong on any
  * machine not itself running in Europe/Berlin, which is exactly the class of bug this account's
- * other StudyLife clients have hit before.
+ * other StudyAtrium clients have hit before.
  */
 export function upcomingSessions(
   sessions: StudySession[] | undefined,

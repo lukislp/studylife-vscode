@@ -144,7 +144,7 @@ describe("transitions", () => {
 });
 
 describe("resuming after a pause", () => {
-  // The wire shape cannot carry the remainder: pausing sets phaseEndsAt to null, and StudyLife's
+  // The wire shape cannot carry the remainder: pausing sets phaseEndsAt to null, and StudyAtrium's
   // own client keeps it in a private field it never sends. Without resumeMs, pause was
   // indistinguishable from stopping the clock and starting the phase over.
   it("restarts the phase from the remembered remainder, not from the top", () => {

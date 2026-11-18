@@ -339,7 +339,7 @@ async function controlTimer(
 }
 
 /**
- * Turns a finished run into a study session, unless StudyLife was already accounting for it.
+ * Turns a finished run into a study session, unless StudyAtrium was already accounting for it.
  * See runLog.ts for why this is the extension's job at all.
  */
 async function bookRun(
@@ -365,7 +365,7 @@ async function bookRun(
         "StudyAtrium: nothing recorded - this window did not start the session, so it has no course or start time to book.",
       );
     }
-    // "planned" stays quiet on purpose: StudyLife is already accounting for that time, so
+    // "planned" stays quiet on purpose: StudyAtrium is already accounting for that time, so
     // there is nothing the user needs to do or know.
     return;
   }
@@ -465,7 +465,7 @@ async function resolveCourse(context: vscode.ExtensionContext): Promise<number |
 }
 
 /**
- * The course picker. Offers the courses with an open goal first - StudyLife has no "active" flag,
+ * The course picker. Offers the courses with an open goal first - StudyAtrium has no "active" flag,
  * but an uncompleted course goal is exactly "a course I am working towards", and the built-in
  * catalogue alone carries around sixty entries, which is an unusable list to start a session from.
  * The full catalogue stays one click away rather than being hidden.
@@ -543,7 +543,7 @@ async function rememberCourseName(
 
 /**
  * Picks the focus preset. Only the built-in nine are offered - custom modes live in the user's
- * StudyLife settings, which this extension cannot read, so it can neither name nor time them.
+ * StudyAtrium settings, which this extension cannot read, so it can neither name nor time them.
  */
 async function pickTimerMode(context: vscode.ExtensionContext): Promise<void> {
   if (!canChangeMode(lastTimerState)) {

@@ -1,6 +1,6 @@
 // Europe/Berlin wall-clock <-> UTC-instant conversion.
 //
-// StudyLife's server is naive-local Europe/Berlin: every DateTime it sends or expects carries no
+// StudyAtrium's server is naive-local Europe/Berlin: every DateTime it sends or expects carries no
 // offset in JSON and means Berlin wall-clock, regardless of what timezone the machine running
 // this extension happens to be in (see studylife-raycast's berlinTime.ts and
 // studylife-streamdeck's equivalent - the same account-wide gotcha, ported here rather than

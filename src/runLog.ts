@@ -1,6 +1,6 @@
 // Deciding whether a finished timer run should become a study session.
 //
-// Why this is needed at all: StudyLife's timer does not record time. The web app attaches it to a
+// Why this is needed at all: StudyAtrium's timer does not record time. The web app attaches it to a
 // session the planner already created (Focus.razor: `Timer.LoadMode(mode, _activeSession?.Id)`),
 // and the timer state itself carries neither a course nor a start time - TimerStateEntity has
 // sessionId, isRunning, isBreak, currentRound, timerModeId and phaseEndsAt, and nothing else. So
@@ -8,7 +8,7 @@
 // its course and book nothing.
 //
 // The extension therefore remembers what it started, and on stop turns it into a session - unless
-// a planned one was already attached, in which case StudyLife is already accounting for the time
+// a planned one was already attached, in which case StudyAtrium is already accounting for the time
 // and a second row would double-count it.
 
 /** What the extension recorded when it started a run. Persisted, because a run can outlive a
@@ -37,7 +37,7 @@ export type Decision =
 /**
  * Whether stopping now should create a session.
  *
- * `plannedSessionId` is the sessionId on the timer state as it stood at the stop - if StudyLife
+ * `plannedSessionId` is the sessionId on the timer state as it stood at the stop - if StudyAtrium
  * had a planned session attached, it is already accounting for this time.
  */
 export function decide(

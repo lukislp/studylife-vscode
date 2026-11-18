@@ -1,5 +1,5 @@
 // The status bar entry. Renders whatever the last poll returned; it never computes study numbers
-// itself - those come from /api/metrics/summary, which is the one place StudyLife calculates them
+// itself - those come from /api/metrics/summary, which is the one place StudyAtrium calculates them
 // (see MetricsController's doc comment). Re-deriving them here would eventually disagree with the
 // web app over some edge case nobody would think to check.
 import * as vscode from "vscode";

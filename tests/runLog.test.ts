@@ -25,7 +25,7 @@ describe("decide", () => {
   });
 
   it("does not log when a planned session was attached", () => {
-    // StudyLife already accounts for that time through the planned session; a second row would
+    // StudyAtrium already accounts for that time through the planned session; a second row would
     // double-count it in exactly the history the grade correlations are computed from.
     expect(decide(run(), 123, NOW)).toEqual({ log: false, reason: "planned" });
   });
