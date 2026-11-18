@@ -1,4 +1,4 @@
-// Timer semantics, mirroring StudyLife's own TimerService so this extension produces states the
+// Timer semantics, mirroring StudyAtrium's own TimerService so this extension produces states the
 // web app and Home Assistant already understand.
 //
 // The wire shape has no "paused" flag. Pause and stop both push isRunning: false with
@@ -44,7 +44,7 @@ export interface ModeChoice {
 
 /**
  * The modes offerable as a choice. Only the built-ins: custom modes (id >= 100) are stored in the
- * user's StudyLife settings, which this extension has no scope to read, so it can neither name
+ * user's StudyAtrium settings, which this extension has no scope to read, so it can neither name
  * nor time them. A custom mode already in use is left alone rather than silently replaced - it
  * simply is not in this list, and the current one stays selected until the user picks another.
  */
@@ -123,7 +123,7 @@ export interface TransitionOptions {
    * Milliseconds left in the phase when it was paused, to resume instead of restarting.
    *
    * This has to be carried by the caller because the wire shape cannot hold it: pausing sets
-   * phaseEndsAt to null, and StudyLife's own client keeps the remainder in memory
+   * phaseEndsAt to null, and StudyAtrium's own client keeps the remainder in memory
    * (TimerService.Pause writes it to a private _secondsLeft field that is never sent). Without
    * it, "pause" is indistinguishable from "stop the clock and start over" - which is exactly how
    * it behaved before this was threaded through.

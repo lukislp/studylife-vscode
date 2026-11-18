@@ -2,7 +2,7 @@
 // testable on their own.
 //
 // Deliberately a SUGGESTION, never a silent recording. A wrongly attributed block would land in
-// the same session history StudyLife correlates against grades and ECTS, so a bad guess does not
+// the same session history StudyAtrium correlates against grades and ECTS, so a bad guess does not
 // just add noise - it quietly distorts an analysis the user trusts. The extension therefore only
 // ever proposes; the user confirms the course and the block.
 
@@ -71,7 +71,7 @@ export function formatDuration(ms: number): string {
 }
 
 /**
- * Hours as StudyLife reports them (a decimal) rendered the same way. Kept separate from
+ * Hours as StudyAtrium reports them (a decimal) rendered the same way. Kept separate from
  * formatDuration so a change to one cannot silently reformat the other.
  */
 export function formatHours(hours: number | undefined): string {
